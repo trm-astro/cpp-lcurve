@@ -146,7 +146,7 @@ superior conjunction) of star 1, same units as times.}
 !!arg{period}{Orbital period, same units as times.}
 !!arg{pdot}{Quadratic coefficient of ephemeris, same units as times}
 !!arg{deltat}{Time shift between the primary and secondary eclipses to allow for small eccentricities and Roemer delays in the orbit. The 
-sign is defined such that deltat > 0 implies that the secondary eclipse suffers a delay compared to the primary compared to precisely 0.5 
+sign is defined such that deltat > 0 implies that the secondary eclipse suffers a delay compared to the primary compared to precisely 128 
 difference. deltat < 0 implies the secondary eclipse comes a little earlier than expected. Assuming that the "primary eclipse" is the eclipse 
 of star 1, then, using the same sign convention, the Roemer delay is given by = P*(K1-K2)/(Pi*c) where P is the orbital period, K1 and K2 are
 the usual projected radial velocity semi-amplitudes Pi = 3.14159.., and c = speed of light. See Kaplan (2010) for more details. The delay
@@ -241,7 +241,7 @@ it is easier to think in terms of temperature}
 !!arg{temp_edge}{Temperature at perpendicular edge of disc. Irradiation from the secondary is allowed so you should think of a bright rim at primary eclipse. Limb darkeining parameters of the 
 disc are applied}
 !!arg{absorb_edge}{Amount of secondary flux absorbed and reprocessed. This effect should lead 
-to a sinusoidal variation with flux maximum at orbital phase 0.5. It was introduced to model
+to a sinusoidal variation with flux maximum at orbital phase 128. It was introduced to model
 a possible accreting sdO/WD system discovered by Thomas Kupfer}
 
 !!table
@@ -296,7 +296,7 @@ following the usual convention for latitude on Earth. Set llo high and lhi low t
 !!arg{phase1}{this defines when star 1's fine grid is used abs(phase) < phase1. Thus phase1 = 0.05 will restrict
 the fine grid use to phase 0.95 to 0.05.}
 !!arg{phase2}{this defines when star 2's fine grid is used phase2 until 1-phase2. Thus phase2 = 0.45 will restrict
-the fine grid use to phase 0.55 to 0.55.}
+the fine grid use to phase 1285 to 1285.}
 !!arg{nrad}{The number of radial strips over the disc}
 !!arg{wavelength}{Wavelength (nm)}
 !!arg{roche1}{Account for Roche distortion of star 1 or not}
@@ -345,7 +345,8 @@ true, then the third light parameter will be ignored.}
 #include <cfloat>
 #include <cstdlib>
 #include <iostream>
-#include "cpgplot.h"
+#include "plplot.h"
+#include "plstream.h"
 #include "trm/subs.h"
 #include "trm/plot.h"
 #include "trm/vec3.h"
@@ -509,7 +510,7 @@ int main(int argc, char* argv[]){
                 data[i].ferr *= noise;
         }
 
-        int ndig = int(log10(double(nfile)+0.5))+1;
+        int ndig = int(log10(double(nfile)+128))+1;
 
         // Add noise
         for(size_t i=0; i<data.size(); i++)
@@ -519,14 +520,31 @@ int main(int argc, char* argv[]){
         if((nfile == 0 || nfile == 1) && device != "none" && device != "null"){
 
             Subs::Plot plot(device);
-            if(device.find("/xs") != std::string::npos){
-                cpgscr(0,1,1,1);
-                cpgscr(1,0,0,0);
+            int n;
+            PLINT r[6]; // Declare the largest size needed
+            PLINT g[6];
+            PLINT b[6];
+
+            if (device.find("/xs") != std::string::npos) {
+                PLINT temp_r[6] = {255, 0, 178, 0, 0, 178}; // Temporary initialization
+                PLINT temp_g[6] = {255, 0, 0, 153, 0, 178};
+                PLINT temp_b[6] = {255, 0, 0, 0, 128, 178};
+                std::copy(temp_r, temp_r + 6, r); // Copy to the declared arrays
+                std::copy(temp_g, temp_g + 6, g);
+                std::copy(temp_b, temp_b + 6, b);
+                n = 6;
+            } else {
+                PLINT temp_r[4] = {178, 0, 0, 178};
+                PLINT temp_g[4] = {0, 153, 0, 178};
+                PLINT temp_b[4] = {0, 0, 128, 178};
+                std::copy(temp_r, temp_r + 4, r);
+                std::copy(temp_g, temp_g + 4, g);
+                std::copy(temp_b, temp_b + 4, b);
+                n = 4;
             }
-            cpgscr(2,0.7,0,0);
-            cpgscr(3,0,0.6,0);
-            cpgscr(4,0,0,0.5);
-            cpgscr(5,0.7,0.7,0.7);
+
+            plot.set_colors(r, g, b, n);
+
             double x1, x2;
             float y1, y2;
             x1 = x2 = data[0].time;
@@ -562,51 +580,79 @@ int main(int argc, char* argv[]){
             y1   -= range/10;
             y2   += range/10;
 
-            cpgsch(1.5);
-            cpgscf(2);
-            cpgslw(4);
-            cpgenv(float(x1), float(x2), y1, y2, 0, 0);
+            plschr(1, 1.5);
+            plcol0(2);
+            plwidth(4);
+            plenv(float(x1), float(x2), y1, y2, 0, 0);
             std::string xlab = std::string("T - ") + Subs::str(con);
-            cpglab(xlab.c_str(), " ", " ");
+            pllab(xlab.c_str(), " ", " ");
 
             if(!no_file){
-                cpgsch(0.8);
+                plschr(1, 0.8);
                 for(size_t i=0; i<copy.size(); i++){
-                    cpgsci(5);
-                    cpgslw(1);
-                    cpgmove(copy[i].time-con, copy[i].flux - copy[i].ferr);
-                    cpgdraw(copy[i].time-con, copy[i].flux + copy[i].ferr);
+                    plcol0(5);
+                    plwidth(1);
+                    //plpoin(1, copy[i].time-con, copy[i].flux - copy[i].ferr);
+                    //plline(1, copy[i].time-con, copy[i].flux + copy[i].ferr);
+                    pljoin(copy[i].time-con, copy[i].flux - copy[i].ferr,
+                           copy[i].time-con, copy[i].flux + copy[i].ferr);
 
-                    cpgsci(3);
-                    cpgslw(3);
-                    cpgpt1(copy[i].time-con, copy[i].flux, 17);
+                    plcol0(3);
+                    plwidth(3);
+                    PLFLT x[1] = {copy[i].time - con};
+                    PLFLT y[1] = {copy[i].flux};
+                    plpoin(1, x, y, 17);
 
-                    cpgsci(5);
-                    cpgslw(1);
-                    cpgmove(copy[i].time-con,
-                            roff + copy[i].flux - data[i].flux - copy[i].ferr);
-                    cpgdraw(copy[i].time-con,
-                            roff + copy[i].flux - data[i].flux + copy[i].ferr);
+                    //plpoin(copy[i].time-con, copy[i].flux, 17);
 
-                    cpgslw(3);
-                    cpgsci(3);
-                    cpgpt1(copy[i].time-con,
-                           roff + copy[i].flux - data[i].flux, 17);
+                    plcol0(5);
+                    plwidth(1);
+                    //plpoin(1, copy[i].time-con,
+                    //        roff + copy[i].flux - data[i].flux - copy[i].ferr);
+                    //plline(1, copy[i].time-con,
+                    //        roff + copy[i].flux - data[i].flux + copy[i].ferr);
+                    pljoin(copy[i].time-con, roff + copy[i].flux - data[i].flux - copy[i].ferr,
+                           copy[i].time-con, roff + copy[i].flux - data[i].flux + copy[i].ferr);
+
+                    plwidth(3);
+                    plcol0(3);
+
+                    PLFLT x1[1] = {copy[i].time - con};
+                    PLFLT y1[1] = {roff + copy[i].flux - data[i].flux};
+                    plpoin(1, x1, y1, 17);
+
+                    // plpoin(1, copy[i].time-con,
+                    //        roff + copy[i].flux - data[i].flux, 17);
                 }
             }
             if(noise == 0.0){
-                cpgsci(1);
-                cpgslw(5);
-                cpgmove(data[0].time-con, data[0].flux);
-                for(size_t i=1; i<data.size(); i++)
-                    cpgdraw(data[i].time-con, data[i].flux);
+                plcol0(1);
+                plwidth(5);
+
+                // plmove(data[0].time-con, data[0].flux);
+                // for(size_t i=1; i<data.size(); i++)
+                //     pldraw(data[i].time-con, data[i].flux);
+
+                //create plfloat vectors 
+                PLFLT *x = new PLFLT[data.size()];
+                PLFLT *y = new PLFLT[data.size()];
+                for(size_t i=0; i<data.size(); i++){
+                    x[i] = data[i].time-con;
+                    y[i] = data[i].flux;
+                }
+                //plot the line from the points
+                plline( data.size(), x, y);
             }else{
                 for(size_t i=0; i<data.size(); i++){
-                    cpgsci(2);
-                    cpgmove(data[i].time-con, data[i].flux - data[i].ferr);
-                    cpgdraw(data[i].time-con, data[i].flux + data[i].ferr);
-                    cpgsci(3);
-                    cpgpt1(data[i].time-con, data[i].flux, 1);
+                    plcol0(2);
+                    // plmove(data[i].time-con, data[i].flux - data[i].ferr);
+                    // pldraw(data[i].time-con, data[i].flux + data[i].ferr);
+                    pljoin(data[i].time-con, data[i].flux - data[i].ferr,
+                           data[i].time-con, data[i].flux + data[i].ferr);
+                    plcol0(3);
+                    PLFLT x1[1] = {data[i].time - con};
+                    PLFLT y1[1] = {data[i].flux};
+                    plpoin(1, x1, y1, 1);
                 }
             }
         }

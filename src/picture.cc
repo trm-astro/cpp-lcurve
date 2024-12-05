@@ -58,7 +58,7 @@ centres towards star 1. If larger than the L1 radius, it will be set equal to it
 
 #include <cstdlib>
 #include <iostream>
-#include "cpgplot.h"
+#include "plplot.h"
 #include "trm/subs.h"
 #include "trm/plot.h"
 #include "trm/vec3.h"
@@ -165,6 +165,9 @@ int main(int argc, char* argv[]){
     input.get_value("reverse", reverse, false, "reverse black & white colour indices?");
     input.save();
 
+    // Set some floats for x1, x2, y1, y2 to plot lines between
+    PLFLT lx1, lx2, ly1, ly2;
+
     // Set standard vectors
     Subs::Vec3 dirn, rvec, dvec, earth;
 
@@ -181,22 +184,42 @@ int main(int argc, char* argv[]){
     // Plot
     Subs::Plot plot(device);
 
+    // Get plot dimensions
     float xs1, xs2, ys1, ys2;
-    cpgqvsz(2,&xs1,&xs2,&ys1,&ys2);
+    //cpgqvsz(2,&xs1,&xs2,&ys1,&ys2); in mm
+    plgvpw(&xs1,&xs2,&ys1,&ys2); // in world coordinates
 
     if(reverse){
-      float bred, bgreen, bblue, fred, fgreen, fblue;
-      cpgqcr(0, &bred, &bgreen, &bblue);
-      cpgqcr(1, &fred, &fgreen, &fblue);
-      cpgscr(1, bred, bgreen, bblue);
-      cpgscr(0, fred, fgreen, fblue);
+      // float bred, bgreen, bblue, fred, fgreen, fblue;
+      // cpgqcr(0, &bred, &bgreen, &bblue);
+      // cpgqcr(1, &fred, &fgreen, &fblue);
+      // cpgscr(1, bred, bgreen, bblue);
+      // cpgscr(0, fred, fgreen, fblue);
+      PLINT bred, bgreen, bblue, fred, fgreen, fblue;
+      plgcol0(0, &bred, &bgreen, &bblue);
+      plgcol0(1, &fred, &fgreen, &fblue);
+      plscol0(1, bred, bgreen, bblue);
+      plscol0(0, fred, fgreen, fblue);
     }
-    cpgpap(width,(y2-y1)/(x2-x1));
-    cpgqvsz(2,&xs1,&xs2,&ys1,&ys2);
-    cpgsvp(0.,1.,0.,1.);
-    cpgwnad(x1, x2, y1, y2);
-    cpgqvsz(2,&xs1,&xs2,&ys1,&ys2);
-    cpgslw(2);
+    // Set viewport size using original aspect ratio and width (inches)
+    // cpgpap(width,(y2-y1)/(x2-x1)); Pgplot uses inches and aspect ratio
+    PLFLT aspect = (ys2-ys1)/(xs2-xs1);
+    PLFLT width_mm = width*25.4;
+    PLFLT height_mm = width_mm*aspect;
+    plsvpa(0., width_mm, 0., height_mm); // in mm
+    plvasp(aspect);
+
+    // get the new viewport size in mm
+    // cpgqvsz(2,&xs1,&xs2,&ys1,&ys2);
+    xs1 = 0.; xs2 = width_mm; ys1 = 0.; ys2 = height_mm; // note: we did this above
+    
+    // This is the window area in world coordinates not required for plplot?
+    //cpgsvp(0.,1.,0.,1.);
+    //cpgwnad(x1, x2, y1, y2);
+    //cpgqvsz(2,&xs1,&xs2,&ys1,&ys2);
+    // If it is it will be 
+    // plgvpw(&xs1,&xs2,&ys1,&ys2); // in world coordinates
+    plwidth(2);
 
     double theta, sint, cost, phi, lam1, lam2, gravity, rad, gref;
     bool ready = false;
@@ -210,12 +233,12 @@ int main(int argc, char* argv[]){
       gref = 1.;
     }
 
-    cpgsci(2);
+    plcol0(2);
 
     // Loop over theta over star 2
     for(int nt=0; nt<ntheta2; nt++){
 
-      cpgbbuf();
+      //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here // Not required for plplot unless you want to buffer the plot specifically here
 
       theta = Constants::PI*(nt+0.5)/ntheta2;
       sint  = sin(theta);
@@ -225,38 +248,45 @@ int main(int argc, char* argv[]){
 
       for(int np=0; np<nphi; np++){
 
-	phi  = Constants::TWOPI*np/(nphi-1);
-	sinp = sin(phi);
-	cosp = cos(phi);
+        phi  = Constants::TWOPI*np/(nphi-1);
+        sinp = sin(phi);
+        cosp = cos(phi);
 
-	dirn.set(cost, sint*cosp, sint*sinp);
+        dirn.set(cost, sint*cosp, sint*sinp);
 
-	if(roche){
-	
-	    Roche::face(q, Roche::SECONDARY, spin2, dirn, rref, pref, acc, rvec, dvec, rad, gravity);
-	  
-	}else{
-	  
-	  // Assume spherical
-	  rvec    = r2*dirn + cofm2;
-	  dvec    = dirn;
-	  
-	}
-	
-	// Eclipse & visibility computation, star1 assumed spherical.
-	if(Subs::dot(earth, dvec) <= 0. || Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
-	   Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	  ready = false;
-	}else{
-	  if(ready)
-	    cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  else
-	    cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  ready = true;
-	}
+        if(roche){
+            Roche::face(q, Roche::SECONDARY, spin2, dirn, rref, pref, acc, rvec, dvec, rad, gravity);
+        }
+        else {
+          // Assume spherical
+          rvec    = r2*dirn + cofm2;
+          dvec    = dirn;
+        }
+        
+        // Eclipse & visibility computation, star1 assumed spherical.
+        if(
+          Subs::dot(earth, dvec) <= 0. || 
+          Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
+          Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)
+        ) {
+            ready = false;
+        }
+        else {
+          if(ready)
+            // this happends if the above is false twice in a row
+            //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+            pljoin(lx1, ly1, lx2, ly2);
+            lx1 = lx2; ly1 = ly2;
+          else
+            //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+            ready = true;
+        }
       }
 
-      cpgebuf();
+      // cpgebuf(); // Flush buffer
+      plflush(); // Flush buffer (may not be required?)
 
       ready = false;
 
@@ -265,7 +295,7 @@ int main(int argc, char* argv[]){
     // Loop over phi over star 2
     for(int np=0; np<nphi2; np++){
 
-      cpgbbuf();
+      //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
 
       phi   = Constants::PI*(np+0.5)/nphi2;
       sinp  = sin(phi);
@@ -275,50 +305,55 @@ int main(int argc, char* argv[]){
 
       for(int nt=0; nt<ntheta; nt++){
 
-	theta  = Constants::TWOPI*nt/(ntheta-1);
-	sint   = sin(theta);
-	cost   = cos(theta);
+        theta  = Constants::TWOPI*nt/(ntheta-1);
+        sint   = sin(theta);
+        cost   = cos(theta);
 
-	dirn.set(cost, sint*cosp, sint*sinp);
+        dirn.set(cost, sint*cosp, sint*sinp);
 
-	if(roche){
-	
-	    Roche::face(q, Roche::SECONDARY, spin2, dirn, rref, pref, acc, rvec, dvec, rad, gravity);
-	  
-	}else{
-	  
-	  // Assume spherical
-	  rvec    = r2*dirn + cofm2;
-	  dvec    = dirn;
-	  
-	}
-	
-	// Eclipse & visibility computation
-	if(Subs::dot(earth, dvec) <= 0. || Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
-	   Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+        if(roche){
 
-	  ready = false;
-	}else{
-	  if(ready)
-	    cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  else
-	    cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  ready = true;
-	}
+          Roche::face(q, Roche::SECONDARY, spin2, dirn, rref, pref, acc, rvec, dvec, rad, gravity);
+
+        }else{
+
+          // Assume spherical
+          rvec    = r2*dirn + cofm2;
+          dvec    = dirn;
+
+        }
+
+        // Eclipse & visibility computation
+        if(Subs::dot(earth, dvec) <= 0. || Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
+          Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+
+          ready = false;
+        }else{
+        if(ready)
+          //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+          pljoin(lx1, ly1, lx2, ly2);
+          lx1 = lx2; ly1 = ly2;
+        else
+          //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+          ready = true;
+        }
       }
 
-      cpgebuf();
+      // cpgebuf(); // Flush buffer
+      plflush(); // Flush buffer (may not be required?)
 
       ready = false;
 
     }
 
-    cpgsci(4);
+    plcol(4);
 
     // Loop over theta over star 1
     for(int nt=0; nt<ntheta1; nt++){
 
-      cpgbbuf();
+      //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
 
       theta = Constants::PI*(nt+0.5)/ntheta1;
       sint  = sin(theta);
@@ -328,41 +363,46 @@ int main(int argc, char* argv[]){
 
       for(int np=0; np<nphi; np++){
 
-	phi  = Constants::TWOPI*np/(nphi-1);
-	sinp = sin(phi);
-	cosp = cos(phi);
+        phi  = Constants::TWOPI*np/(nphi-1);
+        sinp = sin(phi);
+        cosp = cos(phi);
 
-	dirn.set(sint*cosp, sint*sinp, cost);
+        dirn.set(sint*cosp, sint*sinp, cost);
 
-	// Assume spherical
-	rvec    = r1*dirn + cofm1;
-	dvec    = dirn;
-	  
-	// Eclipse & visibility computation
-	if(Subs::dot(earth, dvec) <= 0. || 
-	   (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) || 
-	   (roche  && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	   Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	  ready = false;
-	}else{
-	  if(ready)
-	    cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  else
-	    cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  ready = true;
-	}
+        // Assume spherical
+        rvec    = r1*dirn + cofm1;
+        dvec    = dirn;
+          
+        // Eclipse & visibility computation
+        if(Subs::dot(earth, dvec) <= 0. || 
+          (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) || 
+          (roche  && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+          Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+          ready = false;
+        }else{
+          if(ready){
+            //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx2=Subs::dot(rvec, xsky); ly2=Subs::dot(rvec, ysky);
+            pljoin(lx1, ly1, lx2, ly2);
+            lx1=lx2; ly1=ly2;
+          }else{
+            //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx1=Subs::dot(rvec, xsky); ly1=Subs::dot(rvec, ysky);
+          }
+          ready = true;
+        }
       }
 
-      cpgebuf();
+      //cpgebuf();
+      plflush();
 
       ready = false;
-
     }
 
     // Loop over phi over star 1
     for(int np=0; np<nphi1; np++){
 
-      cpgbbuf();
+      //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
 
       phi   = Constants::PI*(np+0.5)/nphi1;
       sinp  = sin(phi);
@@ -372,46 +412,52 @@ int main(int argc, char* argv[]){
 
       for(int nt=0; nt<ntheta; nt++){
 
-	theta  = Constants::TWOPI*nt/(ntheta-1);
-	sint   = sin(theta);
-	cost   = cos(theta);
+        theta  = Constants::TWOPI*nt/(ntheta-1);
+        sint   = sin(theta);
+        cost   = cos(theta);
 
-	dirn.set(sint*cosp, sint*sinp, cost);
+        dirn.set(sint*cosp, sint*sinp, cost);
 
-	// Assume spherical
-	rvec    = r1*dirn + cofm1;
-	dvec    = dirn;
-	
-	// Eclipse & visibility computation
-	if(Subs::dot(earth, dvec) <= 0. || 
-	   (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) || 
-	   (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	   Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	  ready = false;
-	}else{
-	  if(ready)
-	    cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  else
-	    cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  ready = true;
-	}
+        // Assume spherical
+        rvec    = r1*dirn + cofm1;
+        dvec    = dirn;
+
+        // Eclipse & visibility computation
+        if(Subs::dot(earth, dvec) <= 0. || 
+          (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) || 
+          (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+          Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+            ready = false;
+        }else{
+          if(ready){
+            //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+            pljoin(lx1, ly1, lx2, ly2);
+            lx1 = lx2; ly1 = ly2;
+          }else{
+            //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+            ready = true;
+          }
+        }
       }
 
-      cpgebuf();
+      //cpgebuf();
+      plflush();
 
       ready = false;
 
 
     }
 
-    cpgsci(1);
+    plcol(1);
 
     double rdisc;
 
     // Loop over theta for disc
     for(int nt=0; nt<ndisct; nt++){
 
-      cpgbbuf();
+      //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
 
       theta = Constants::TWOPI*(nt+0.5)/ndisct;
 
@@ -419,26 +465,32 @@ int main(int argc, char* argv[]){
 
       for(int nr=0; nr<nrad; nr++){
 
-	rdisc = rdisc1 + (rdisc2-rdisc1)*nr/(nrad-1);
-	Lcurve::pos_disc(rdisc, theta, beta, height, rvec, dvec);
-	  
-	// Eclipse & visibility computation
-	if(Subs::dot(earth, dvec) <= 0. || 
-	   (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) || 
-	   (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	   Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
-	   Lcurve::disc_surface_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	  ready = false;
-	}else{
-	  if(ready)
-	    cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  else
-	    cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  ready = true;
-	}
+        rdisc = rdisc1 + (rdisc2-rdisc1)*nr/(nrad-1);
+        Lcurve::pos_disc(rdisc, theta, beta, height, rvec, dvec);
+
+        // Eclipse & visibility computation
+        if(Subs::dot(earth, dvec) <= 0. || 
+          (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) || 
+          (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+          Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
+          Lcurve::disc_surface_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+          ready = false;
+        }else{
+          if(ready){
+            //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+            pljoin(lx1, ly1, lx2, ly2);
+            lx1 = lx2; ly1 = ly2;
+          else{
+            //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx1=Subs::dot(rvec, xsky); ly1=Subs::dot(rvec, ysky);
+            ready = true;
+          }
+        }
       }
 
-      cpgebuf();
+      //cpgebuf();
+      plflush();
 
       ready = false;
 
@@ -447,7 +499,7 @@ int main(int argc, char* argv[]){
     // Loop over radius of disc
     for(int nr=0; nr<ndiscr; nr++){
 
-      cpgbbuf();
+      //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
 
       rdisc   = rdisc1 + (rdisc2-rdisc1)*nr/(ndiscr-1);
 
@@ -455,119 +507,142 @@ int main(int argc, char* argv[]){
 
       for(int nt=0; nt<ntheta; nt++){
 
-	theta  = Constants::TWOPI*nt/(ntheta-1);
+        theta  = Constants::TWOPI*nt/(ntheta-1);
 
-	Lcurve::pos_disc(rdisc, theta, beta, height, rvec, dvec);
-	  
-	// Eclipse & visibility computation
-	if(Subs::dot(earth, dvec) <= 0. || 
-	   (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
-	   (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	   Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
-	   Lcurve::disc_surface_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	  ready = false;
-	}else{
-	  if(ready)
-	    cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  else
-	    cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  ready = true;
-	}
+        Lcurve::pos_disc(rdisc, theta, beta, height, rvec, dvec);
+
+        // Eclipse & visibility computation
+        if(Subs::dot(earth, dvec) <= 0. || 
+        (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
+        (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+        Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
+        Lcurve::disc_surface_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+          ready = false;
+        }else{
+          if(ready){
+            //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+            pljoin(lx1, ly1, lx2, ly2);
+            lx1 = lx2; ly1 = ly2;
+          }else{
+            //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+            ready = true;
+          }
+        }
       }
 
-      cpgebuf();
-
+      //cpgebuf();
+      plflush();
       ready = false;
 
     }
 
 
     // Ring at upper edge of disc
-    cpgbbuf();
+    //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
     int nphi = int(rdisc2*nplot/r2+0.5);
     for(int np=0; np<nphi; np++){
 
       phi = Constants::TWOPI*np/(nphi-1);
       rvec.set(rdisc2*cos(phi), rdisc2*sin(phi), height*pow(rdisc2,beta));
- 
+
       // Eclipse & visibility computation
       if(Subs::dot(earth, dvec) <= 0. || 
-	 (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
-	 (roche || Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	 Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2)){ 
-	ready = false;
+        (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
+        (roche || Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+        Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2)){ 
+        ready = false;
       }else{
-	if(ready)
-	  cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	else
-	  cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	ready = true;
+        if(ready){
+          //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+          pljoin(lx1, ly1, lx2, ly2);
+          lx1 = lx2; ly1 = ly2;
+        }
+        else{
+          //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+          ready = true;
+        }
       }
     }
 
-    cpgebuf();
+    //cpgebuf();
+    plflush();
     ready = false;
 
     // Ring at lower edge of disc
-    cpgbbuf();
+    //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
     nphi = int(rdisc2*nplot/r2+0.5);
     for(int np=0; np<nphi; np++){
-
       phi = Constants::TWOPI*np/(nphi-1);
       rvec.set(rdisc2*cos(phi), rdisc2*sin(phi), -height*pow(rdisc2,beta));
- 
+
       // Eclipse & visibility computation
       if(Subs::dot(earth, dvec) <= 0. || 
-	 (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
-	 (roche || Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	 Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
-	 Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	ready = false;
+        (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
+        (roche || Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+        Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
+        Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+          ready = false;
       }else{
-	if(ready)
-	  cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	else
-	  cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	ready = true;
+        if(ready){
+          //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+          pljoin(lx1, ly1, lx2, ly2);
+          lx1 = lx2; ly1 = ly2;
+        }else{
+          //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+          ready = true;
+        }
       }
     }
 
-    cpgebuf();
+    //cpgebuf();
+    plflush();
     ready = false;
 
 
     // Ring at lower edge of disc
-    cpgbbuf();
+    //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
     double x, y;
     for(int ne=0; ne<nedge; ne++){
 
       phi  = Constants::TWOPI*ne/nedge;
       x    = rdisc2*cos(phi);
       y    = rdisc2*sin(phi);
-      
+
       double h2 = height*pow(rdisc2,beta);
       int nvert = int(2*h2*nplot/r2+0.5);
       for(int nv=0; nv<nvert; nv++){
-	
-	rvec.set(x, y, -h2+2.*h2*nv/(nvert-1));
- 
-	// Eclipse & visibility computation
-	if(Subs::dot(earth, dvec) <= 0. || 
-	   (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
-	   (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	   Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
-	   Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	  ready = false;
-	}else{
-	  if(ready)
-	    cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  else
-	    cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  ready = true;
-	}
+
+        rvec.set(x, y, -h2+2.*h2*nv/(nvert-1));
+
+        // Eclipse & visibility computation
+        if(Subs::dot(earth, dvec) <= 0. || 
+          (!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
+          (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+          Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
+          Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+            ready = false;
+        }else{
+          if(ready){
+            //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+            pljoin(lx1, ly1, lx2, ly2);
+            lx1 = lx2; ly1 = ly2;
+          }else{
+            //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx1=Subs::dot(rvec, xsky); ly1=Subs::dot(rvec, ysky);
+            ready = true;
+          }
+        }
       }
-    
-      cpgebuf();
+
+      //cpgebuf();
+      plflush();
       ready = false;
     }
 
@@ -577,7 +652,7 @@ int main(int argc, char* argv[]){
 
     cpgslw(6);
     cpgsci(2);
-    cpgbbuf();
+    //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
     for(int ns=0; ns<NSTREAM; ns++){
 
       rvec.set(xs[ns], ys[ns], 0.);
