@@ -44,7 +44,6 @@ visualise model nphase nphase (phase)/(phase1 phase2) device x1 x2 y1 y2
 
 #include <cstdlib>
 #include <iostream>
-#include "cpgplot.h"
 #include "trm/subs.h"
 #include "trm/plot.h"
 #include "trm/vec3.h"
@@ -60,7 +59,7 @@ Subs::Buffer1D<double> Lcurve::Fobj::scale_min;
 int main(int argc, char* argv[]){
 
     // Defined at the end
-    void plot_visible(const Subs::Buffer1D<Lcurve::Point>& object, const Subs::Vec3& earth, const Subs::Vec3& cofm, const Subs::Vec3& xsky, const Subs::Vec3& ysky, double phase);  
+    void plot_visible(const Subs::Buffer1D<Lcurve::Point>& object, const Subs::Vec3& earth, const Subs::Vec3& cofm, const Subs::Vec3& xsky, const Subs::Vec3& ysky, double phase, plstream* pls);  
   
     try{
     
@@ -114,6 +113,9 @@ int main(int argc, char* argv[]){
         input.get_value("sdOB", sdOB, false, "sdOB colours?");
 
         input.save();
+
+        // Single item vectors for glphs
+        PLFLT gx[1], gy[1];
 
         double r1, r2, rdisc1=0., rdisc2=0.;
         model.get_r1r2(r1, r2);
@@ -201,26 +203,41 @@ int main(int argc, char* argv[]){
 
         // Plot
         Subs::Plot plot(device);
-
-        cpgpap(width, (y2-y1)/(x2-x1));
+        plstream* pls = plot.get_plstream();
+        PLFLT aspect = (y2-y1)/(x2-x1);
+        PLFLT width_mm = width*25.4;
+        PLFLT height_mm = width_mm*aspect;
+        pls->svpa(0., width_mm, 0., height_mm); // in mm
+        pls->vasp(aspect);
+        //cpgpap(width, (y2-y1)/(x2-x1));
 
 	// set up colours. sdOB means we swap blue and red for primary and secondary
         if(reverse){
-	    cpgscr(0,1,1,1);
-	    cpgscr(1,0,0,0);
+        pls->scol0(0, 255, 255, 255);
+        pls->scol0(1, 0, 0, 0);
+	    // cpgscr(0,1,1,1);
+	    // cpgscr(1,0,0,0);
 	    if(sdOB){
-		cpgscr(2,0,0,0.5);
-		cpgscr(3,0,0.3,0);
-		cpgscr(4,0.4,0,0);
+        pls->scol0(2, 0,0,126);
+        pls->scol0(3, 0,77,0);
+        pls->scol0(4, 102,0,0);
+		// cpgscr(2,0,0,0.5);
+		// cpgscr(3,0,0.3,0);
+		// cpgscr(4,0.4,0,0);
 	    }else{
-		cpgscr(2,0.4,0,0);
-		cpgscr(3,0,0.3,0);
-		cpgscr(4,0,0,0.5);
+        pls->scol0(2, 102,0,0);
+        pls->scol0(3, 0,77,0);
+        pls->scol0(4, 0,0,126);
+		// cpgscr(2,0.4,0,0);
+		// cpgscr(3,0,0.3,0);
+		// cpgscr(4,0,0,0.5);
 	    }
 	}else{
 	    if(sdOB){
-		cpgscr(2,0,0,1);
-		cpgscr(4,1,0,0);
+        pls->scol0(2, 0,0,255);
+        pls->scol0(4, 255,0,0);
+		// cpgscr(2,0,0,1);
+		// cpgscr(4,1,0,0);
 	    }
 	}
 
@@ -232,7 +249,8 @@ int main(int argc, char* argv[]){
 
             if(nphase > 1) phase = phase1 + (phase2-phase1)*np/double(nphase-1);
 
-            cpgenv(x1, x2, y1, y2, 1, -2);
+            pls->env(x1, x2, y1, y2, 1, -2);
+            //cpgenv(x1, x2, y1, y2, 1, -2);
 
             earth = Roche::set_earth(model.iangle, phase);
 
@@ -243,43 +261,56 @@ int main(int argc, char* argv[]){
             Subs::Vec3 xsky(sinp,cosp,0.);
             Subs::Vec3 ysky = Subs::cross(earth, xsky);
 
-            cpgbbuf();
+            //cpgbbuf();
 
-            cpgsch(2);
+            //cpgsch(2);
+            pls->schr(0, 2);
 
             // star 1
-            cpgsci(4);
-            plot_visible(star1, earth, cofm, xsky, ysky, phase);
+            //cpgsci(4);
+            pls->col0(4);
+            plot_visible(star1, earth, cofm, xsky, ysky, phase, pls);
 
             // star 2
-            cpgsci(2);
-            plot_visible(star2, earth, cofm, xsky, ysky, phase);
+            //cpgsci(2);
+            pls->col0(2);
+            plot_visible(star2, earth, cofm, xsky, ysky, phase, pls);
 
             if(model.add_disc){
 
                 // disc surface
-                cpgsci(3);
-                plot_visible(disc, earth, cofm, xsky, ysky, phase);
+                //cpgsci(3);
+                pls->col0(3);
+                plot_visible(disc, earth, cofm, xsky, ysky, phase, pls);
 
                 // edges
-                cpgsci(1);
-                plot_visible(outer_edge, earth, cofm, xsky, ysky, phase);
-                plot_visible(inner_edge, earth, cofm, xsky, ysky, phase);
+                //cpgsci(1);
+                pls->col0(1);
+                plot_visible(outer_edge, earth, cofm, xsky, ysky, phase, pls);
+                plot_visible(inner_edge, earth, cofm, xsky, ysky, phase, pls);
             }
 
             if(model.add_spot){
-                cpgsci(2);
-                plot_visible(stream, earth, cofm, xsky, ysky, phase);
-                cpgsci(2);
+                //cpgsci(2);
+                pls->col0(2);
+                plot_visible(stream, earth, cofm, xsky, ysky, phase, pls);
+                //cpgsci(2);
+                pls->col0(2);
                 double cosbs = Subs::dot(earth, stream[stream.size()-1].posn);
                 if(cosbs > 0. && stream[stream.size()-1].visible(phase)){
                     r = stream[stream.size()-1].posn - cofm;
-                    cpgslw(6);
-                    cpgsch(0.5+3.5*cosbs);
-                    cpgpt1(Subs::dot(r, xsky), Subs::dot(r, ysky), 18);
+                    //cpgslw(6);
+                    pls->width(6);
+                    //cpgsch(0.5+3.5*cosbs);
+                    pls->schr(0, 0.5+3.5*cosbs);
+                    //cpgpt1(Subs::dot(r, xsky), Subs::dot(r, ysky), 18);
+                    gx[0] = Subs::dot(r, xsky);
+                    gy[0] = Subs::dot(r, ysky);
+                    pls->poin(1, gx, gy, 18);
                 }
             }
-            cpgebuf();
+            //cpgebuf();
+            pls->flush();
         }
     }
     catch(const std::string& err){
@@ -290,12 +321,17 @@ int main(int argc, char* argv[]){
 
 
 // plots visible points
-void plot_visible(const Subs::Buffer1D<Lcurve::Point>& object, const Subs::Vec3& earth, const Subs::Vec3& cofm, const Subs::Vec3& xsky, const Subs::Vec3& ysky, double phase){
+void plot_visible(const Subs::Buffer1D<Lcurve::Point>& object, const Subs::Vec3& earth, const Subs::Vec3& cofm, const Subs::Vec3& xsky, const Subs::Vec3& ysky, double phase, plstream* pls){
     Subs::Vec3 r;
+    // Single item vectors for glphs
+    PLFLT gx[1], gy[1];
     for(int i=0; i<object.size(); i++){
         if(Subs::dot(earth, object[i].dirn) > 0. && object[i].visible(phase)){
             r = object[i].posn - cofm;
-            cpgpt1(Subs::dot(r, xsky), Subs::dot(r, ysky), 1);
+            //cpgpt1(Subs::dot(r, xsky), Subs::dot(r, ysky), 1);
+            gx[0] = Subs::dot(r, xsky);
+            gy[0] = Subs::dot(r, ysky);
+            pls->poin(1, gx, gy, 1);
         }
     }
 }

@@ -58,7 +58,6 @@ centres towards star 1. If larger than the L1 radius, it will be set equal to it
 
 #include <cstdlib>
 #include <iostream>
-#include "plplot.h"
 #include "trm/subs.h"
 #include "trm/plot.h"
 #include "trm/vec3.h"
@@ -167,6 +166,8 @@ int main(int argc, char* argv[]){
 
     // Set some floats for x1, x2, y1, y2 to plot lines between
     PLFLT lx1, lx2, ly1, ly2;
+    // Single item vectors for glphs
+    PLFLT gx[1], gy[1];
 
     // Set standard vectors
     Subs::Vec3 dirn, rvec, dvec, earth;
@@ -183,11 +184,12 @@ int main(int argc, char* argv[]){
 
     // Plot
     Subs::Plot plot(device);
+    plstream* pls = plot.get_plstream();
 
     // Get plot dimensions
-    float xs1, xs2, ys1, ys2;
+    PLFLT xs1, xs2, ys1, ys2;
     //cpgqvsz(2,&xs1,&xs2,&ys1,&ys2); in mm
-    plgvpw(&xs1,&xs2,&ys1,&ys2); // in world coordinates
+    pls->gvpw(xs1,xs2,ys1,ys2); // in world coordinates
 
     if(reverse){
       // float bred, bgreen, bblue, fred, fgreen, fblue;
@@ -196,18 +198,18 @@ int main(int argc, char* argv[]){
       // cpgscr(1, bred, bgreen, bblue);
       // cpgscr(0, fred, fgreen, fblue);
       PLINT bred, bgreen, bblue, fred, fgreen, fblue;
-      plgcol0(0, &bred, &bgreen, &bblue);
-      plgcol0(1, &fred, &fgreen, &fblue);
-      plscol0(1, bred, bgreen, bblue);
-      plscol0(0, fred, fgreen, fblue);
+      pls->gcol0(0, bred, bgreen, bblue);
+      pls->gcol0(1, fred, fgreen, fblue);
+      pls->scol0(1, bred, bgreen, bblue);
+      pls->scol0(0, fred, fgreen, fblue);
     }
     // Set viewport size using original aspect ratio and width (inches)
     // cpgpap(width,(y2-y1)/(x2-x1)); Pgplot uses inches and aspect ratio
     PLFLT aspect = (ys2-ys1)/(xs2-xs1);
     PLFLT width_mm = width*25.4;
     PLFLT height_mm = width_mm*aspect;
-    plsvpa(0., width_mm, 0., height_mm); // in mm
-    plvasp(aspect);
+    pls->svpa(0., width_mm, 0., height_mm); // in mm
+    pls->vasp(aspect);
 
     // get the new viewport size in mm
     // cpgqvsz(2,&xs1,&xs2,&ys1,&ys2);
@@ -219,7 +221,7 @@ int main(int argc, char* argv[]){
     //cpgqvsz(2,&xs1,&xs2,&ys1,&ys2);
     // If it is it will be 
     // plgvpw(&xs1,&xs2,&ys1,&ys2); // in world coordinates
-    plwidth(2);
+    pls->width(2);
 
     double theta, sint, cost, phi, lam1, lam2, gravity, rad, gref;
     bool ready = false;
@@ -233,7 +235,7 @@ int main(int argc, char* argv[]){
       gref = 1.;
     }
 
-    plcol0(2);
+    pls->col0(2);
 
     // Loop over theta over star 2
     for(int nt=0; nt<ntheta2; nt++){
@@ -272,21 +274,22 @@ int main(int argc, char* argv[]){
             ready = false;
         }
         else {
-          if(ready)
+          if(ready){
             // this happends if the above is false twice in a row
             //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-            pljoin(lx1, ly1, lx2, ly2);
+            pls->join(lx1, ly1, lx2, ly2);
             lx1 = lx2; ly1 = ly2;
-          else
+          }else{
             //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
             ready = true;
+          }
         }
       }
 
       // cpgebuf(); // Flush buffer
-      plflush(); // Flush buffer (may not be required?)
+      pls->flush(); // Flush buffer (may not be required?)
 
       ready = false;
 
@@ -329,26 +332,27 @@ int main(int argc, char* argv[]){
 
           ready = false;
         }else{
-        if(ready)
-          //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-          lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-          pljoin(lx1, ly1, lx2, ly2);
-          lx1 = lx2; ly1 = ly2;
-        else
-          //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-          lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
-          ready = true;
+          if(ready){
+            //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+            pls->join(lx1, ly1, lx2, ly2);
+            lx1 = lx2; ly1 = ly2;
+          }else{
+            //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+            lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+            ready = true;
+          }
         }
       }
 
       // cpgebuf(); // Flush buffer
-      plflush(); // Flush buffer (may not be required?)
+      pls->flush(); // Flush buffer (may not be required?)
 
       ready = false;
 
     }
 
-    plcol(4);
+    pls->col0(4);
 
     // Loop over theta over star 1
     for(int nt=0; nt<ntheta1; nt++){
@@ -383,7 +387,7 @@ int main(int argc, char* argv[]){
           if(ready){
             //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx2=Subs::dot(rvec, xsky); ly2=Subs::dot(rvec, ysky);
-            pljoin(lx1, ly1, lx2, ly2);
+            pls->join(lx1, ly1, lx2, ly2);
             lx1=lx2; ly1=ly2;
           }else{
             //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
@@ -394,7 +398,7 @@ int main(int argc, char* argv[]){
       }
 
       //cpgebuf();
-      plflush();
+      pls->flush();
 
       ready = false;
     }
@@ -432,7 +436,7 @@ int main(int argc, char* argv[]){
           if(ready){
             //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-            pljoin(lx1, ly1, lx2, ly2);
+            pls->join(lx1, ly1, lx2, ly2);
             lx1 = lx2; ly1 = ly2;
           }else{
             //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
@@ -443,14 +447,14 @@ int main(int argc, char* argv[]){
       }
 
       //cpgebuf();
-      plflush();
+      pls->flush();
 
       ready = false;
 
 
     }
 
-    plcol(1);
+    pls->col0(1);
 
     double rdisc;
 
@@ -479,9 +483,9 @@ int main(int argc, char* argv[]){
           if(ready){
             //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-            pljoin(lx1, ly1, lx2, ly2);
+            pls->join(lx1, ly1, lx2, ly2);
             lx1 = lx2; ly1 = ly2;
-          else{
+          }else{
             //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx1=Subs::dot(rvec, xsky); ly1=Subs::dot(rvec, ysky);
             ready = true;
@@ -490,7 +494,7 @@ int main(int argc, char* argv[]){
       }
 
       //cpgebuf();
-      plflush();
+      pls->flush();
 
       ready = false;
 
@@ -522,7 +526,7 @@ int main(int argc, char* argv[]){
           if(ready){
             //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-            pljoin(lx1, ly1, lx2, ly2);
+            pls->join(lx1, ly1, lx2, ly2);
             lx1 = lx2; ly1 = ly2;
           }else{
             //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
@@ -533,7 +537,7 @@ int main(int argc, char* argv[]){
       }
 
       //cpgebuf();
-      plflush();
+      pls->flush();
       ready = false;
 
     }
@@ -557,7 +561,7 @@ int main(int argc, char* argv[]){
         if(ready){
           //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
           lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-          pljoin(lx1, ly1, lx2, ly2);
+          pls->join(lx1, ly1, lx2, ly2);
           lx1 = lx2; ly1 = ly2;
         }
         else{
@@ -569,7 +573,7 @@ int main(int argc, char* argv[]){
     }
 
     //cpgebuf();
-    plflush();
+    pls->flush();
     ready = false;
 
     // Ring at lower edge of disc
@@ -590,7 +594,7 @@ int main(int argc, char* argv[]){
         if(ready){
           //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
           lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-          pljoin(lx1, ly1, lx2, ly2);
+          pls->join(lx1, ly1, lx2, ly2);
           lx1 = lx2; ly1 = ly2;
         }else{
           //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
@@ -601,7 +605,7 @@ int main(int argc, char* argv[]){
     }
 
     //cpgebuf();
-    plflush();
+    pls->flush();
     ready = false;
 
 
@@ -631,7 +635,7 @@ int main(int argc, char* argv[]){
           if(ready){
             //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
             lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
-            pljoin(lx1, ly1, lx2, ly2);
+            pls->join(lx1, ly1, lx2, ly2);
             lx1 = lx2; ly1 = ly2;
           }else{
             //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
@@ -642,7 +646,7 @@ int main(int argc, char* argv[]){
       }
 
       //cpgebuf();
-      plflush();
+      pls->flush();
       ready = false;
     }
 
@@ -650,35 +654,49 @@ int main(int argc, char* argv[]){
     float xs[NSTREAM], ys[NSTREAM];
     Roche::streamr(q, rdisc2, xs, ys, NSTREAM);
 
-    cpgslw(6);
-    cpgsci(2);
+    //cpgslw(6);
+    pls->width(6);
+
+    //cpgsci(2);
+    pls->col0(2);
+
     //cpgbbuf(); // Not required for plplot unless you want to buffer the plot specifically here
     for(int ns=0; ns<NSTREAM; ns++){
 
       rvec.set(xs[ns], ys[ns], 0.);
- 
+
       // Eclipse & visibility computation
       if((!roche && Roche::sphere_eclipse(earth, rvec, cofm2, rref, lam1, lam2)) ||
-	 (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
-	 Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
-	 Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
-	ready = false;
+        (roche && Roche::fblink(q, Roche::SECONDARY, spin2, ffac, acc, earth, rvec)) ||
+        Roche::sphere_eclipse(earth, rvec, cofm1, r1, lam1, lam2) ||
+        Lcurve::disc_eclipse(iangle, phase, rdisc1, rdisc2, beta, height, rvec)){
+          ready = false;
       }else{
-	if(ready){
-	  cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	  if(ns == NSTREAM-1){
-	    cpgsci(4);
-	    cpgsch(spot);
-	    cpgpt1(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky), 15);
-	  }
-	}else{
-	  cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
-	}
-	ready = true;
+        if(ready){
+          //cpgdraw(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx2 = Subs::dot(rvec, xsky); ly2 = Subs::dot(rvec, ysky);
+          pls->join(lx1, ly1, lx2, ly2);
+          lx1 = lx2; ly1 = ly2;
+          if(ns == NSTREAM-1){
+            // cpgsci(4);
+            // cpgsch(spot);
+            // cpgpt1(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky), 15);
+            pls->col0(4);
+            pls->schr(0, spot);
+            gx[0] = Subs::dot(rvec, xsky);
+            gy[0] = Subs::dot(rvec, ysky);
+            pls->poin(1, gx, gy, 15);
+          }
+        }else{
+          //cpgmove(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky));
+          lx1 = Subs::dot(rvec, xsky); ly1 = Subs::dot(rvec, ysky);
+        }
+        ready = true;
       }
     }
     
-    cpgebuf();
+    //cpgebuf();
+    pls->flush();
     ready = false;
     
   }

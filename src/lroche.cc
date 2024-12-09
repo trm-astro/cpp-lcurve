@@ -345,8 +345,6 @@ true, then the third light parameter will be ignored.}
 #include <cfloat>
 #include <cstdlib>
 #include <iostream>
-#include "plplot.h"
-#include "plstream.h"
 #include "trm/subs.h"
 #include "trm/plot.h"
 #include "trm/vec3.h"
@@ -520,6 +518,8 @@ int main(int argc, char* argv[]){
         if((nfile == 0 || nfile == 1) && device != "none" && device != "null"){
 
             Subs::Plot plot(device);
+            plstream* pls;
+            pls = plot.get_plstream();
             int n;
             PLINT r[6]; // Declare the largest size needed
             PLINT g[6];
@@ -580,54 +580,54 @@ int main(int argc, char* argv[]){
             y1   -= range/10;
             y2   += range/10;
 
-            plschr(1, 1.5);
-            plcol0(2);
-            plwidth(4);
-            plenv(float(x1), float(x2), y1, y2, 0, 0);
+            pls->schr(1, 1.5);
+            pls->col0(2);
+            pls->width(4);
+            pls->env(float(x1), float(x2), y1, y2, 0, 0);
             std::string xlab = std::string("T - ") + Subs::str(con);
-            pllab(xlab.c_str(), " ", " ");
+            pls->lab(xlab.c_str(), " ", " ");
 
             if(!no_file){
-                plschr(1, 0.8);
+                pls->schr(1, 0.8);
                 for(size_t i=0; i<copy.size(); i++){
-                    plcol0(5);
-                    plwidth(1);
+                    pls->col0(5);
+                    pls->width(1);
                     //plpoin(1, copy[i].time-con, copy[i].flux - copy[i].ferr);
                     //plline(1, copy[i].time-con, copy[i].flux + copy[i].ferr);
-                    pljoin(copy[i].time-con, copy[i].flux - copy[i].ferr,
+                    pls->join(copy[i].time-con, copy[i].flux - copy[i].ferr,
                            copy[i].time-con, copy[i].flux + copy[i].ferr);
 
-                    plcol0(3);
-                    plwidth(3);
+                    pls->col0(3);
+                    pls->width(3);
                     PLFLT x[1] = {copy[i].time - con};
                     PLFLT y[1] = {copy[i].flux};
-                    plpoin(1, x, y, 17);
+                    pls->poin(1, x, y, 17);
 
                     //plpoin(copy[i].time-con, copy[i].flux, 17);
 
-                    plcol0(5);
-                    plwidth(1);
+                    pls->col0(5);
+                    pls->width(1);
                     //plpoin(1, copy[i].time-con,
                     //        roff + copy[i].flux - data[i].flux - copy[i].ferr);
                     //plline(1, copy[i].time-con,
                     //        roff + copy[i].flux - data[i].flux + copy[i].ferr);
-                    pljoin(copy[i].time-con, roff + copy[i].flux - data[i].flux - copy[i].ferr,
+                    pls->join(copy[i].time-con, roff + copy[i].flux - data[i].flux - copy[i].ferr,
                            copy[i].time-con, roff + copy[i].flux - data[i].flux + copy[i].ferr);
 
-                    plwidth(3);
-                    plcol0(3);
+                    pls->width(3);
+                    pls->col0(3);
 
                     PLFLT x1[1] = {copy[i].time - con};
                     PLFLT y1[1] = {roff + copy[i].flux - data[i].flux};
-                    plpoin(1, x1, y1, 17);
+                    pls->poin(1, x1, y1, 17);
 
                     // plpoin(1, copy[i].time-con,
                     //        roff + copy[i].flux - data[i].flux, 17);
                 }
             }
             if(noise == 0.0){
-                plcol0(1);
-                plwidth(5);
+                pls->col0(1);
+                pls->width(5);
 
                 // plmove(data[0].time-con, data[0].flux);
                 // for(size_t i=1; i<data.size(); i++)
@@ -641,18 +641,18 @@ int main(int argc, char* argv[]){
                     y[i] = data[i].flux;
                 }
                 //plot the line from the points
-                plline( data.size(), x, y);
+                pls->line( data.size(), x, y);
             }else{
                 for(size_t i=0; i<data.size(); i++){
-                    plcol0(2);
+                    pls->col0(2);
                     // plmove(data[i].time-con, data[i].flux - data[i].ferr);
                     // pldraw(data[i].time-con, data[i].flux + data[i].ferr);
-                    pljoin(data[i].time-con, data[i].flux - data[i].ferr,
+                    pls->join(data[i].time-con, data[i].flux - data[i].ferr,
                            data[i].time-con, data[i].flux + data[i].ferr);
-                    plcol0(3);
+                    pls->col0(3);
                     PLFLT x1[1] = {data[i].time - con};
                     PLFLT y1[1] = {data[i].flux};
-                    plpoin(1, x1, y1, 1);
+                    pls->poin(1, x1, y1, 1);
                 }
             }
         }

@@ -1,12 +1,14 @@
 #ifndef TRM_LCURVE
 #define TRM_LCURVE
 
+
 #include <cmath>
 #include <string>
 #include "trm/subs.h"
 #include "trm/array1d.h"
 #include "trm/vec3.h"
 #include "trm/roche.h"
+#include "plstream.h"
 
 //! Lcurve namespace. Stuff to do with light curve modelling.
 

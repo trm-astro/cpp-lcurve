@@ -112,7 +112,7 @@ target_link_libraries(${PACKAGE_NAME}
 # Note: may not work on windows
 # Specify where the library binary will go
 install(TARGETS ${PACKAGE_NAME}
-    EXPORT ${PACKAGE_NAME}Targets              # Export the library target for package config
+    EXPORT ${PACKAGE_NAME}Targets        # Export the library target for package config
     LIBRARY DESTINATION lib              # For shared libraries
     ARCHIVE DESTINATION lib              # For static libraries
     RUNTIME DESTINATION bin              # For executables (if any)
@@ -160,23 +160,46 @@ install(EXPORT ${PACKAGE_NAME}Targets
 # Executable sources
 add_executable(lprofile src/lprofile.cc)
 add_executable(levmarq src/levmarq.cc)
-#add_executable(lroche src/lroche.cc)
-#add_executable(lroches src/lroche.cc)  # Assuming lroches is similar to lroche
-add_executable(picture src/picture.cc)
+add_executable(lroche src/lroche.cc)
+add_executable(lroches src/lroche.cc)  # Assuming lroches is similar to lroche
+add_executable(picture src/picture.cc src/pos_disc.cc src/disc_eclipse.cc)
 add_executable(rotprof src/rotprof.cc)
 add_executable(simplex src/simplex.cc)
 add_executable(visualise src/visualise.cc)
 
+find_package(LCURVE REQUIRED)
+if (NOT LCURVE_FOUND)
+    message(FATAL_ERROR "LCURVE library not found.")
+endif()
+
 # Link the library and OpenMP to executables
-#foreach(EXEC lprofile levmarq lroche lroches picture rotprof simplex visualise)
-foreach(EXEC lprofile levmarq picture rotprof simplex visualise)
-    target_link_libraries(${EXEC} PRIVATE ${PACKAGE_NAME} OpenMP::OpenMP_CXX)
+foreach(EXEC lprofile levmarq lroche lroches picture rotprof simplex visualise)
+    target_include_directories(
+        ${EXEC} PRIVATE 
+        $<BUILD_INTERFACE:${PLPLOT_INCLUDE_DIR}> 
+    )
+    target_link_libraries(
+        ${EXEC} PRIVATE 
+        OpenMP::OpenMP_CXX
+        ${PLPLOT_LIB_DIR}/libplplotcxx.dylib
+        subs::subs
+        ${PACKAGE_NAME}::${PACKAGE_NAME}
+    )
 endforeach()
 
 ############################################################
 # Install executables
 ############################################################
-#install(TARGETS lprofile levmarq lroche lroches picture rotprof simplex visualise
-install(TARGETS lprofile levmarq picture rotprof simplex visualise
+# Ensure RPATH includes the library directories
+set(CMAKE_BUILD_RPATH "${PLPLOT_LIB_DIR};/usr/local/lib")
+set(CMAKE_INSTALL_RPATH "${PLPLOT_LIB_DIR};/usr/local/lib")
+
+# Allow the RPATH to be used in the build tree
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+install(TARGETS lprofile levmarq lroche lroches picture rotprof simplex visualise
     RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib          # Shared libraries to lib/
+    ARCHIVE DESTINATION lib          # Static libraries to lib/
 )
