@@ -3,9 +3,9 @@ project(cpp-lcurve)
 
 include(ExternalProject)
 
-message("CMakeLists.txt for cpp-subs")
+message("CMakeLists.txt for cpp-lcurve")
 message("PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
-message("CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+message("CMAKE_binary_DIR: ${CMAKE_binary_DIR}")
 
 set(PACKAGE_NAME lcurve)
 
@@ -47,41 +47,23 @@ target_include_directories(${PACKAGE_NAME}
 ############################################################
 # Check for and install dependencies
 ############################################################
-
-include("${CMAKE_BINARY_DIR}/Release/generators/conan_toolchain.cmake")
-
 # Configure the PLPLOT library
+if(NOT DEFINED CMAKE_COMMON)
+    set(CMAKE_COMMON ${PROJECT_SOURCE_DIR}/../../cmake_common)
+endif()
+if(NOT DEFINED PLPLOT_FOUND)
+    include("${CMAKE_COMMON}/plplot_install.cmake")
+endif()
 
-include("${CMAKE_SOURCE_DIR}/../../cmake_common/plplot_install.cmake")
-
-find_package(SOFA REQUIRED)
-find_package(PCRE2 REQUIRED)
-find_package(SUBS REQUIRED)
-find_package(COLLY REQUIRED)
-find_package(BINARY REQUIRED)
-find_package(ROCHE REQUIRED)
+find_package(colly REQUIRED)
+find_package(roche REQUIRED)
 find_package(OpenMP REQUIRED)
 
-if (NOT SOFA_FOUND)
-    message(FATAL_ERROR "SOFA library not found.")
+if (NOT colly_FOUND)
+    message(FATAL_ERROR "colly library not found.")
 endif()
-if (NOT PCRE2_FOUND)
-    message(FATAL_ERROR "PCRE2 library not found.")
-endif()
-if (NOT PLPLOT_FOUND)
-    message(FATAL_ERROR "PLPLOT library not found.")
-endif()
-if (NOT SUBS_FOUND)
-    message(FATAL_ERROR "SUBS library not found.")
-endif()
-if (NOT COLLY_FOUND)
-    message(FATAL_ERROR "COLLY library not found.")
-endif()
-if (NOT BINARY_FOUND)
-    message(FATAL_ERROR "BINARY library not found.")
-endif()
-if (NOT ROCHE_FOUND)
-    message(FATAL_ERROR "ROCHE library not found.")
+if (NOT roche_FOUND)
+    message(FATAL_ERROR "roche library not found.")
 endif()
 if (NOT OpenMP_FOUND)
     message(FATAL_ERROR "OpenMP library not found.")
@@ -92,14 +74,9 @@ target_include_directories(${PACKAGE_NAME}
         $<BUILD_INTERFACE:${PLPLOT_INCLUDE_DIR}>
 )
 target_link_libraries(${PACKAGE_NAME} 
-    PUBLIC 
-        sofa::sofa 
-        pcre2::pcre2
-        ${PLPLOT_LIB_DIR}/libplplotcxx.dylib
-        subs::subs
-        colly::colly
-        binary::binary
-        roche::roche
+    PRIVATE
+        roche
+        colly
         OpenMP::OpenMP_CXX
 )
 
@@ -107,6 +84,15 @@ target_link_libraries(${PACKAGE_NAME}
 ############################################################
 # Install
 ############################################################
+message("sofa_LIBRARIES: ${sofa_LIBRARIES}")
+message("CONAN_LIB_DIRS_SOFA: ${CONAN_LIB_DIRS_SOFA}")
+message("CMAKE_BUILD_RPATH: ${CMAKE_BUILD_RPATH}")
+
+# Ensure RPATHS are correct
+set(CMAKE_BUILD_RPATH "/usr/local/lib;/")
+set(CMAKE_INSTALL_RPATH "/usr/local/lib;/")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Library
 # Note: may not work on windows
@@ -153,53 +139,55 @@ install(EXPORT ${PACKAGE_NAME}Targets
     DESTINATION lib/cmake/${PACKAGE_NAME}
 )
 
-############################################################
-# Build executables that link against the lcurve library
-############################################################
 
-# Executable sources
-add_executable(lprofile src/lprofile.cc)
-add_executable(levmarq src/levmarq.cc)
-add_executable(lroche src/lroche.cc)
-add_executable(lroches src/lroche.cc)  # Assuming lroches is similar to lroche
-add_executable(picture src/picture.cc src/pos_disc.cc src/disc_eclipse.cc)
-add_executable(rotprof src/rotprof.cc)
-add_executable(simplex src/simplex.cc)
-add_executable(visualise src/visualise.cc)
 
-find_package(LCURVE REQUIRED)
-if (NOT LCURVE_FOUND)
-    message(FATAL_ERROR "LCURVE library not found.")
-endif()
+# ############################################################
+# # Build executables that link against the lcurve library
+# ############################################################
 
-# Link the library and OpenMP to executables
-foreach(EXEC lprofile levmarq lroche lroches picture rotprof simplex visualise)
-    target_include_directories(
-        ${EXEC} PRIVATE 
-        $<BUILD_INTERFACE:${PLPLOT_INCLUDE_DIR}> 
-    )
-    target_link_libraries(
-        ${EXEC} PRIVATE 
-        OpenMP::OpenMP_CXX
-        ${PLPLOT_LIB_DIR}/libplplotcxx.dylib
-        subs::subs
-        ${PACKAGE_NAME}::${PACKAGE_NAME}
-    )
-endforeach()
+# # Executable sources
+# add_executable(lprofile src/lprofile.cc)
+# add_executable(levmarq src/levmarq.cc)
+# add_executable(lroche src/lroche.cc)
+# add_executable(lroches src/lroche.cc)  # Assuming lroches is similar to lroche
+# add_executable(picture src/picture.cc src/pos_disc.cc src/disc_eclipse.cc)
+# add_executable(rotprof src/rotprof.cc)
+# add_executable(simplex src/simplex.cc)
+# add_executable(visualise src/visualise.cc)
 
-############################################################
-# Install executables
-############################################################
-# Ensure RPATH includes the library directories
-set(CMAKE_BUILD_RPATH "${PLPLOT_LIB_DIR};/usr/local/lib")
-set(CMAKE_INSTALL_RPATH "${PLPLOT_LIB_DIR};/usr/local/lib")
+# find_package(LCURVE REQUIRED)
+# if (NOT LCURVE_FOUND)
+#     message(FATAL_ERROR "LCURVE library not found.")
+# endif()
 
-# Allow the RPATH to be used in the build tree
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# # Link the library and OpenMP to executables
+# foreach(EXEC lprofile levmarq lroche lroches picture rotprof simplex visualise)
+#     target_include_directories(
+#         ${EXEC} PUBLIC 
+#         $<BUILD_INTERFACE:${PLPLOT_INCLUDE_DIR}> 
+#     )
+#     target_link_libraries(
+#         ${EXEC} PUBLIC 
+#         OpenMP::OpenMP_CXX
+#         ${PLPLOT_LIB_DIR}/libplplotcxx.dylib
+#         subs::subs
+#         ${PACKAGE_NAME}::${PACKAGE_NAME}
+#     )
+# endforeach()
 
-install(TARGETS lprofile levmarq lroche lroches picture rotprof simplex visualise
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib          # Shared libraries to lib/
-    ARCHIVE DESTINATION lib          # Static libraries to lib/
-)
+# ############################################################
+# # Install executables
+# ############################################################
+# # Ensure RPATH includes the library directories
+# set(CMAKE_BUILD_RPATH "${PLPLOT_LIB_DIR};/usr/local/lib")
+# set(CMAKE_INSTALL_RPATH "${PLPLOT_LIB_DIR};/usr/local/lib")
+
+# # Allow the RPATH to be used in the build tree
+# set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+# set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# install(TARGETS lprofile levmarq lroche lroches picture rotprof simplex visualise
+#     RUNTIME DESTINATION bin
+#     LIBRARY DESTINATION lib          # Shared libraries to lib/
+#     ARCHIVE DESTINATION lib          # Static libraries to lib/
+# )
