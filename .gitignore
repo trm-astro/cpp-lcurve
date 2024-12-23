@@ -27,5 +27,6 @@ errors
 doc/geometry.log
 doc/geometry.pdf
 
-
+CMakeUserPresets.json
+build/
 
