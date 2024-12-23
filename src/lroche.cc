@@ -516,7 +516,7 @@ int main(int argc, char* argv[]){
 
         // make plot
         if((nfile == 0 || nfile == 1) && device != "none" && device != "null"){
-
+            
             Subs::Plot plot(device);
             plstream* pls;
             pls = plot.get_plstream();
@@ -544,6 +544,7 @@ int main(int argc, char* argv[]){
             }
 
             plot.set_colors(r, g, b, n);
+            pls->scolbg(255, 255, 255);
 
             double x1, x2;
             float y1, y2;
@@ -580,15 +581,15 @@ int main(int argc, char* argv[]){
             y1   -= range/10;
             y2   += range/10;
 
-            pls->schr(1, 1.5);
-            pls->col0(2);
-            pls->width(4);
+            pls->schr(1, 4.5);
+            pls->col0(1);
+            pls->width(1);
             pls->env(float(x1), float(x2), y1, y2, 0, 0);
             std::string xlab = std::string("T - ") + Subs::str(con);
             pls->lab(xlab.c_str(), " ", " ");
 
             if(!no_file){
-                pls->schr(1, 0.8);
+                pls->schr(1, 2.4);
                 for(size_t i=0; i<copy.size(); i++){
                     pls->col0(5);
                     pls->width(1);
@@ -627,7 +628,7 @@ int main(int argc, char* argv[]){
             }
             if(noise == 0.0){
                 pls->col0(1);
-                pls->width(5);
+                pls->width(2);
 
                 // plmove(data[0].time-con, data[0].flux);
                 // for(size_t i=1; i<data.size(); i++)
@@ -644,7 +645,7 @@ int main(int argc, char* argv[]){
                 pls->line( data.size(), x, y);
             }else{
                 for(size_t i=0; i<data.size(); i++){
-                    pls->col0(2);
+                    pls->col0(1);
                     // plmove(data[i].time-con, data[i].flux - data[i].ferr);
                     // pldraw(data[i].time-con, data[i].flux + data[i].ferr);
                     pls->join(data[i].time-con, data[i].flux - data[i].ferr,

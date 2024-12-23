@@ -248,7 +248,7 @@ int main(int argc, char* argv[]){
         for(int np=0; np<nphase; np++){
 
             if(nphase > 1) phase = phase1 + (phase2-phase1)*np/double(nphase-1);
-
+            pls->col0(1);
             pls->env(x1, x2, y1, y2, 1, -2);
             //cpgenv(x1, x2, y1, y2, 1, -2);
 
@@ -264,7 +264,7 @@ int main(int argc, char* argv[]){
             //cpgbbuf();
 
             //cpgsch(2);
-            pls->schr(0, 2);
+            pls->schr(0, 6);
 
             // star 1
             //cpgsci(4);
@@ -302,7 +302,7 @@ int main(int argc, char* argv[]){
                     //cpgslw(6);
                     pls->width(6);
                     //cpgsch(0.5+3.5*cosbs);
-                    pls->schr(0, 0.5+3.5*cosbs);
+                    pls->schr(0, 0.5+3.5*cosbs*3);
                     //cpgpt1(Subs::dot(r, xsky), Subs::dot(r, ysky), 18);
                     gx[0] = Subs::dot(r, xsky);
                     gy[0] = Subs::dot(r, ysky);

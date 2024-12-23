@@ -682,7 +682,7 @@ int main(int argc, char* argv[]){
             // cpgsch(spot);
             // cpgpt1(Subs::dot(rvec, xsky), Subs::dot(rvec, ysky), 15);
             pls->col0(4);
-            pls->schr(0, spot);
+            pls->schr(0, spot*3);
             gx[0] = Subs::dot(rvec, xsky);
             gy[0] = Subs::dot(rvec, ysky);
             pls->poin(1, gx, gy, 15);
