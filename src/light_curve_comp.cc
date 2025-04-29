@@ -345,6 +345,15 @@ void Lcurve::light_curve_comp(const Lcurve::Model& mdl,
 
       wdwarf *= sfac[0];
       if(mdl.iscale){
+          // sfac is not in the same order as fcomp
+          Subs::Buffer1D<double> tfac(4);
+          tfac = sfac;
+          sfac.resize(5);
+          sfac[0] = tfac[0]; // white dwarf
+          sfac[1] = tfac[2]; // disc
+          sfac[2] = tfac[2]; // disc edge
+          sfac[3] = tfac[3]; // spot   
+          sfac[4] = tfac[1]; // donor
           for(size_t np=0; np<data.size(); np++){
               calc[np] = sfac[0]*fcomp[np][0]+sfac[1]*fcomp[np][1]+
                   sfac[2]*fcomp[np][2]+sfac[3]*fcomp[np][3];
