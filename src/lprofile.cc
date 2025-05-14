@@ -183,9 +183,10 @@ int main(int argc, char* argv[]){
         Subs::Buffer1D<double> fine(NFINE);
 
         // blurr array stuff
-        const int nblurr = int(3.*nfine*fwhm/((v2-v1)/nbin));
-        const int nbtot  = 2*nblurr+1;
-        float blurr[nbtot], sigma = fwhm/Constants::EFAC;
+        int nblurr = int(3.*nfine*fwhm/((v2-v1)/nbin));
+        int nbtot  = 2*nblurr+1;
+        std::vector<float> blurr(nbtot);
+        float sigma = fwhm/Constants::EFAC;
         float efac = Subs::sqr((v2-v1)/nbin/nfine/sigma)/2.;
         double sum = 0.;
         for(int k = -nblurr; k<= nblurr; k++)

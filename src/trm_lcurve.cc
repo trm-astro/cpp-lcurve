@@ -4,6 +4,12 @@
 #include "trm/roche.h"
 #include "trm/format.h"
 
+// Define static members of Lcurve::Fobj
+int Lcurve::Fobj::neval = 0;
+double Lcurve::Fobj::chisq_min = std::numeric_limits<double>::max();
+Subs::Buffer1D<double> Lcurve::Fobj::scale_min;
+
+
 /** Outputs the value and step size of a physical parameter
  */
 std::ostream& Lcurve::operator<<(std::ostream& s, const Pparam& p){

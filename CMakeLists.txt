@@ -3,9 +3,9 @@ project(cpp-lcurve)
 
 include(ExternalProject)
 
-message("CMakeLists.txt for cpp-lcurve")
+message("\nCMakeLists.txt for cpp-lcurve")
 message("PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
-message("CMAKE_binary_DIR: ${CMAKE_binary_DIR}")
+message("CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
 
 set(PACKAGE_NAME lcurve)
 
@@ -14,7 +14,6 @@ set(PACKAGE_NAME lcurve)
 ############################################################
 
 set(SOURCES
-    src/lprofile.cc
     src/numface.cc
     src/set_star_grid.cc
     src/set_star_emission.cc
@@ -55,37 +54,19 @@ if(NOT DEFINED PLPLOT_FOUND)
     include("${CMAKE_COMMON}/plplot_install.cmake")
 endif()
 
-# find_package(colly REQUIRED)
-# find_package(roche REQUIRED)
 find_package(OpenMP REQUIRED)
-
-if (NOT colly_FOUND)
-    message(FATAL_ERROR "colly library not found.")
-endif()
-if (NOT roche_FOUND)
-    message(FATAL_ERROR "roche library not found.")
-endif()
-if (NOT OpenMP_FOUND)
-    message(FATAL_ERROR "OpenMP library not found.")
-endif()
 
 target_include_directories(${PACKAGE_NAME}
     PUBLIC 
         $<BUILD_INTERFACE:${PLPLOT_INCLUDE_DIR}>
 )
+#target_compile_options(${PACKAGE_NAME} PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PACKAGE_NAME} 
     PUBLIC
         roche
         colly
-        OpenMP::OpenMP_CXX
+        llvm-openmp::llvm-openmp
 )
-
-
-############################################################
-# Create an executable
-############################################################
-
-# No executable in this code, this is a library
 
 ############################################################
 # Install
@@ -94,3 +75,4 @@ include("${CMAKE_COMMON}/install_lib.cmake") # Get the generic install function
 
 install_lib(${PACKAGE_NAME})
 
+message("CMakeLists.txt for cpp-lcurve done\n")

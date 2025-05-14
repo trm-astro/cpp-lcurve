@@ -8,6 +8,7 @@
 
 #ifdef _OPENMP
   #include <omp.h>
+  #include <ompx.h>
 #endif
 
 /**

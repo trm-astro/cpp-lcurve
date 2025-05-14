@@ -651,8 +651,9 @@ int main(int argc, char* argv[]){
     }
 
     const int NSTREAM = std::max(2,int(nplot*(1-rl2)/r2+0.5));
-    float xs[NSTREAM], ys[NSTREAM];
-    Roche::streamr(q, rdisc2, xs, ys, NSTREAM);
+    std::vector<float> xs(NSTREAM), ys(NSTREAM);
+    //float xs[NSTREAM], ys[NSTREAM];
+    Roche::streamr(q, rdisc2, xs.data(), ys.data(), NSTREAM);
 
     //cpgslw(6);
     pls->width(6);
