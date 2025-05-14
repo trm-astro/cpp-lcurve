@@ -274,7 +274,7 @@ void Lcurve::add_faces(Subs::Buffer1D<Lcurve::Point>& star, int& nface, double t
 //     int mxth = std::min(16, omp_get_max_threads());
 //     omp_set_num_threads(mxth);
 // #pragma omp parallel for schedule(dynamic)
-#endif
+//#endif
 
     for(int nt=0; nt<nlat; nt++){
 
