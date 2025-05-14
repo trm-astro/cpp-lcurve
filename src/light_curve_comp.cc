@@ -2,9 +2,9 @@
 #include "trm/buffer2d.h"
 #include "trm/constants.h"
 
-#ifdef _OPENMP
-  #include <omp.h>
-#endif
+// #ifdef _OPENMP
+//   #include <omp.h>
+// #endif
 
 /** This routine computes the light curve corresponding to a particular
  * model and times defined by some data. Data with negative or zero errors
@@ -217,11 +217,11 @@ void Lcurve::light_curve_comp(const Lcurve::Model& mdl,
   // which is very likely to be the case. However, since the time per point is
   // large, overheads should not be too bad.
 
-#ifdef _OPENMP
-  int mxth = std::min(16, omp_get_max_threads());
-  omp_set_num_threads(mxth);
-#pragma omp parallel for schedule(dynamic) if(data.size() > 4)
-#endif
+// #ifdef _OPENMP
+//   int mxth = std::min(16, omp_get_max_threads());
+//   omp_set_num_threads(mxth);
+// #pragma omp parallel for schedule(dynamic) if(data.size() > 4)
+// #endif
 
   for(size_t np=0; np<data.size(); np++){
 

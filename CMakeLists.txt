@@ -54,7 +54,11 @@ if(NOT DEFINED PLPLOT_FOUND)
     include("${CMAKE_COMMON}/plplot_install.cmake")
 endif()
 
-find_package(OpenMP REQUIRED)
+
+# TODO: Make this work with the LLVM OpenMP library
+# There is the option to use OpenMP for a little bit of parallelism in set_star_grid and light_curve_comp
+# However its a pain and not worth the hassle right now
+#find_package(OpenMP REQUIRED)
 
 target_include_directories(${PACKAGE_NAME}
     PUBLIC 
@@ -65,7 +69,7 @@ target_link_libraries(${PACKAGE_NAME}
     PUBLIC
         roche
         colly
-        llvm-openmp::llvm-openmp
+        #llvm-openmp::llvm-openmp
 )
 
 ############################################################

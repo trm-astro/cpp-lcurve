@@ -6,10 +6,10 @@
 #include "trm/roche.h"
 #include "trm/lcurve.h"
 
-#ifdef _OPENMP
-  #include <omp.h>
-  #include <ompx.h>
-#endif
+// #ifdef _OPENMP
+//   #include <omp.h>
+//   #include <ompx.h>
+// #endif
 
 /**
  * set_star_grid sets up the elements needed to define the primary(secondary)
@@ -270,10 +270,10 @@ void Lcurve::add_faces(Subs::Buffer1D<Lcurve::Point>& star, int& nface, double t
     bool failed = false;
     std::string error_message;
 
-#ifdef _OPENMP
-    int mxth = std::min(16, omp_get_max_threads());
-    omp_set_num_threads(mxth);
-#pragma omp parallel for schedule(dynamic)
+// #ifdef _OPENMP
+//     int mxth = std::min(16, omp_get_max_threads());
+//     omp_set_num_threads(mxth);
+// #pragma omp parallel for schedule(dynamic)
 #endif
 
     for(int nt=0; nt<nlat; nt++){
