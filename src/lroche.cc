@@ -32,7 +32,7 @@ formats.
 
 !!head2 Invocation
 
-lroche model data [time1 time2 ntime expose] noise seed nfile [output] (device) [(roff) scale [ssfac]/[sstar1 sstar2 sdisc spot]]
+lroche model data [time1 time2 ntime expose] noise seed nfile [output] (plot) [(roff) scale [ssfac]/[sstar1 sstar2 sdisc spot]]
 
 !!head2 Arguments
 
@@ -56,7 +56,7 @@ nfile > 1. 0 is possible in which case there will be no output.}
 !!arg{output}{File to save the results in the form of rows each with
 time, exposure time, flux and uncertainty. If nfile > 1, then the files 
 will have a number added, as in data001}
-!!arg{device}{Plot device to use; 'none' or 'null' to ignore}
+!!arg{plot}{If plot=true, then the results will be plotted}
 !!arg{roff}{Offset to add to the residuals when plotting a fit to data}
 !!arg{scale}{Autoscale or not. If true, then the scale factors will be determined by minimisation of chi**2 using
 linear scaling factors.}
@@ -358,9 +358,11 @@ double Lcurve::Fobj::chisq_min;
 Subs::Buffer1D<double> Lcurve::Fobj::scale_min;
 
 // Main program
-int main(int argc, char* argv[]){
+int main(int argc, char *argv[])
+{
 
-    try{
+    try
+    {
 
         // Construct Input object
         Subs::Input input(argc, argv, Lcurve::LCURVE_ENV, Lcurve::LCURVE_DIR);
@@ -377,7 +379,7 @@ int main(int argc, char* argv[]){
         input.sign_in("seed",     Subs::Input::LOCAL,  Subs::Input::PROMPT);
         input.sign_in("nfile",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
         input.sign_in("output",   Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("device",   Subs::Input::LOCAL,  Subs::Input::PROMPT);
+        input.sign_in("plot", Subs::Input::LOCAL, Subs::Input::PROMPT);
         input.sign_in("roff",     Subs::Input::LOCAL,  Subs::Input::NOPROMPT);
         input.sign_in("scale",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
         input.sign_in("sstar1",   Subs::Input::LOCAL,  Subs::Input::PROMPT);
@@ -396,7 +398,8 @@ int main(int argc, char* argv[]){
                         "data file ('none' if you want to specify regularly-spaced times");
         bool no_file = (Subs::toupper(sdata) == "NONE");
         Lcurve::Data data, copy;
-        if(!no_file){
+        if (!no_file)
+        {
             data.rasc(sdata);
             if(data.size() == 0)
                 throw Lcurve::Lcurve_Error("No data read from file.");
@@ -405,7 +408,8 @@ int main(int argc, char* argv[]){
 
         double time1, time2, expose, noise;
         int ntime, ndivide;
-        if(no_file){
+        if (no_file)
+        {
             input.get_value("time1", time1, 0.,
                             -DBL_MAX, DBL_MAX, "first time to compute");
             input.get_value("time2", time2, 1.,
@@ -418,15 +422,19 @@ int main(int argc, char* argv[]){
                             INT_MAX, "ndivide factor to use");
             input.get_value("noise", noise, 0., 0.,
                             DBL_MAX, "RMS noise to add (after scaling)");
-        }else{
+        }
+        else
+        {
             input.get_value("noise", noise, 0., 0.,
                             DBL_MAX, "RMS noise multiplier");
         }
 
-        if(no_file){
+        if (no_file)
+        {
             // Build fake data
             Lcurve::Datum datum = {0., expose, 0., noise, 1., ndivide};
-            for(int i=0; i<ntime; i++){
+            for (int i = 0; i < ntime; i++)
+            {
                 datum.time   = time1 + (time2-time1)*i/(ntime-1);
                 data.push_back(datum);
             }
@@ -435,15 +443,16 @@ int main(int argc, char* argv[]){
         Subs::INT4 seed;
         input.get_value("seed", seed, 57565, INT_MIN, INT_MAX,
                         "random number seed");
-        if(seed > 0) seed = -seed;
+        if (seed > 0)
+            seed = -seed;
         int nfile;
         input.get_value("nfile", nfile, 1, 0, 20000,
                         "number of files to generate");
         std::string sout;
         if(nfile > 0)
             input.get_value("output", sout, "data", "file/root to save data");
-        std::string device;
-        input.get_value("device", device, "/xs", "plot device");
+        bool makeplot = false;
+        input.get_value("plot", makeplot, true, "plot results?");
         double roff;
         input.get_value("roff", roff, 0., -DBL_MAX, DBL_MAX, "off to add to residuals when plotting a fit to data");
 
@@ -451,8 +460,10 @@ int main(int argc, char* argv[]){
         if(!no_file)
             input.get_value("scale", scale, true, "autoscale?");
         Subs::Buffer1D<double> sfac(4);
-        if(!scale){
-            if(model.iscale){
+        if (!scale)
+        {
+            if (model.iscale)
+            {
                 input.get_value("sstar1", sfac[0], 1.,
                                 -DBL_MAX, DBL_MAX, "star 1 scale factor");
                 input.get_value("sstar2", sfac[1], 1.,
@@ -461,7 +472,9 @@ int main(int argc, char* argv[]){
                                 -DBL_MAX, DBL_MAX, "disc scale factor");
                 input.get_value("sspot",  sfac[3], 1.,
                                 -DBL_MAX, DBL_MAX, "spot scale factor");
-            }else{
+            }
+            else
+            {
                 input.get_value("ssfac", sfac[0], 1.,
                                 -DBL_MAX, DBL_MAX, "global scale factor");
             }
@@ -477,12 +490,14 @@ int main(int argc, char* argv[]){
 
         Subs::Format form(12);
 
-        if(!no_file){
+        if (!no_file)
+        {
 
             std::cout << "Weighted chi**2 = " << form(chisq)
                       << ", wnok = " << form(wnok) << std::endl;
             // Save scale factors
-            if(model.iscale){
+            if (model.iscale)
+            {
                 input.set_default("sstar1", sfac[0]);
                 input.set_default("sstar2", sfac[1]);
                 input.set_default("sdisc",  sfac[2]);
@@ -490,7 +505,9 @@ int main(int argc, char* argv[]){
                 std::cout << "Scale factors = " << form(sfac[0]) << ", "
                           << form(sfac[1]) << ", " << form(sfac[2])
                           << ", " << form(sfac[3]) << std::endl;
-            }else{
+            }
+            else
+            {
                 input.set_default("ssfac", sfac[0]);
                 std::cout << "Scale factor = " << form(sfac[0]) << std::endl;
             }
@@ -502,7 +519,8 @@ int main(int argc, char* argv[]){
         std::cout << "Vol-averaged r1 = " << form(rv1) << std::endl;
         std::cout << "Vol-averaged r2 = " << form(rv2) << std::endl;
 
-        if(!no_file){
+        if (!no_file)
+        {
             // Scale error bars
             for(size_t i=0; i<data.size(); i++)
                 data[i].ferr *= noise;
@@ -515,9 +533,10 @@ int main(int argc, char* argv[]){
             data[i].flux = fit[i] + data[i].ferr*Subs::gauss2(seed);
 
         // make plot
-        if((nfile == 0 || nfile == 1) && device != "none" && device != "null"){
-            
-            Subs::Plot plot(device);
+        if ((nfile == 0 || nfile == 1) && makeplot)
+        {
+            // use null as device name for now, gets chosen later anyway
+            Subs::Plot plot('null');
             plstream* pls;
             pls = plot.get_plstream();
             int n;
@@ -525,7 +544,6 @@ int main(int argc, char* argv[]){
             PLINT g[6];
             PLINT b[6];
 
-            if (device.find("/xs") != std::string::npos) {
                 PLINT temp_r[6] = {255, 0, 178, 0, 0, 178}; // Temporary initialization
                 PLINT temp_g[6] = {255, 0, 0, 153, 0, 178};
                 PLINT temp_b[6] = {255, 0, 0, 0, 128, 178};
@@ -533,15 +551,6 @@ int main(int argc, char* argv[]){
                 std::copy(temp_g, temp_g + 6, g);
                 std::copy(temp_b, temp_b + 6, b);
                 n = 6;
-            } else {
-                PLINT temp_r[4] = {178, 0, 0, 178};
-                PLINT temp_g[4] = {0, 153, 0, 178};
-                PLINT temp_b[4] = {0, 0, 128, 178};
-                std::copy(temp_r, temp_r + 4, r);
-                std::copy(temp_g, temp_g + 4, g);
-                std::copy(temp_b, temp_b + 4, b);
-                n = 4;
-            }
 
             plot.set_colors(r, g, b, n);
             pls->scolbg(255, 255, 255);
@@ -551,24 +560,23 @@ int main(int argc, char* argv[]){
             x1 = x2 = data[0].time;
             y1 = data[0].flux - data[0].ferr;
             y2 = data[0].flux + data[0].ferr;
-            for(size_t i=1; i<data.size(); i++){
+            for (size_t i = 1; i < data.size(); i++)
+            {
                 x1 = data[i].time > x1 ? x1 : data[i].time;
                 x2 = data[i].time < x2 ? x2 : data[i].time;
-                y1 = data[i].flux - data[i].ferr > y1 ? y1 :
-                    data[i].flux - data[i].ferr;
-                y2 = data[i].flux + data[i].ferr < y2 ? y2 :
-                    data[i].flux + data[i].ferr;
-                if(!no_file){
-                    y1 = copy[i].flux - copy[i].ferr > y1 ? y1 :
-                        copy[i].flux - copy[i].ferr;
-                    y2 = copy[i].flux + copy[i].ferr < y2 ? y2 :
-                        copy[i].flux + copy[i].ferr;
+                y1 = data[i].flux - data[i].ferr > y1 ? y1 : data[i].flux - data[i].ferr;
+                y2 = data[i].flux + data[i].ferr < y2 ? y2 : data[i].flux + data[i].ferr;
+                if (!no_file)
+                {
+                    y1 = copy[i].flux - copy[i].ferr > y1 ? y1 : copy[i].flux - copy[i].ferr;
+                    y2 = copy[i].flux + copy[i].ferr < y2 ? y2 : copy[i].flux + copy[i].ferr;
                     y1 = roff + copy[i].flux - data[i].flux - copy[i].ferr > y1 ? y1 : roff + copy[i].flux - data[i].flux - copy[i].ferr;
                     y2 = roff + copy[i].flux - data[i].flux + copy[i].ferr < y2 ? y2 : roff + copy[i].flux - data[i].flux + copy[i].ferr;
                 }
             }
             double con = 0.;
-            if(x2-x1 < 0.01*Subs::abs((x1+x2)/2.)){
+            if (x2 - x1 < 0.01 * Subs::abs((x1 + x2) / 2.))
+            {
                 con = x1;
                 x1 -= con;
                 x2 -= con;
@@ -588,9 +596,11 @@ int main(int argc, char* argv[]){
             std::string xlab = std::string("T - ") + Subs::str(con);
             pls->lab(xlab.c_str(), " ", " ");
 
-            if(!no_file){
+            if (!no_file)
+            {
                 pls->schr(1, 2.4);
-                for(size_t i=0; i<copy.size(); i++){
+                for (size_t i = 0; i < copy.size(); i++)
+                {
                     pls->col0(5);
                     pls->width(1);
                     //plpoin(1, copy[i].time-con, copy[i].flux - copy[i].ferr);
@@ -626,7 +636,8 @@ int main(int argc, char* argv[]){
                     //        roff + copy[i].flux - data[i].flux, 17);
                 }
             }
-            if(noise == 0.0){
+            if (noise == 0.0)
+            {
                 pls->col0(1);
                 pls->width(2);
 
@@ -637,14 +648,18 @@ int main(int argc, char* argv[]){
                 //create plfloat vectors 
                 PLFLT *x = new PLFLT[data.size()];
                 PLFLT *y = new PLFLT[data.size()];
-                for(size_t i=0; i<data.size(); i++){
+                for (size_t i = 0; i < data.size(); i++)
+                {
                     x[i] = data[i].time-con;
                     y[i] = data[i].flux;
                 }
                 //plot the line from the points
                 pls->line( data.size(), x, y);
-            }else{
-                for(size_t i=0; i<data.size(); i++){
+            }
+            else
+            {
+                for (size_t i = 0; i < data.size(); i++)
+                {
                     pls->col0(1);
                     // plmove(data[i].time-con, data[i].flux - data[i].ferr);
                     // pldraw(data[i].time-con, data[i].flux + data[i].ferr);
@@ -659,12 +674,16 @@ int main(int argc, char* argv[]){
         }
 
         // Write out to disk
-        if(nfile == 1){
+        if (nfile == 1)
+        {
             // note: noise will already have been added
             data.wrasc(sout);
             std::cout << "Written data to " << sout << std::endl;
-        }else{
-            for(int n=0; n<nfile; n++){
+        }
+        else
+        {
+            for (int n = 0; n < nfile; n++)
+            {
                 // Add noise
                 for(size_t i=0; i<data.size(); i++)
                     data[i].flux = fit[i] + data[i].ferr*Subs::gauss2(seed);
@@ -675,21 +694,25 @@ int main(int argc, char* argv[]){
             }
         }
     }
-    catch(const Roche::Roche_Error& err){
+    catch (const Roche::Roche_Error &err)
+    {
         std::cerr << "Roche::Roche_Error exception thrown" << std::endl;
         std::cerr << "lroche: " << err.what() << std::endl;
         exit(EXIT_FAILURE);
     }
-    catch(const Lcurve::Lcurve_Error& err){
+    catch (const Lcurve::Lcurve_Error &err)
+    {
         std::cerr << "Lcurve::Lcurve_Error exception thrown" << std::endl;
         std::cerr << err << std::endl;
         exit(EXIT_FAILURE);
     }
-    catch(const std::string& err){
+    catch (const std::string &err)
+    {
         std::cerr << err << std::endl;
         exit(EXIT_FAILURE);
     }
-    catch(...){
+    catch (...)
+    {
         std::cerr << "Unknown exception caught in lroche" << std::endl;
         exit(EXIT_FAILURE);
     }
