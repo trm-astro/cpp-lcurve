@@ -346,12 +346,15 @@ true, then the third light parameter will be ignored.}
 #include <cstdlib>
 #include <iostream>
 #include "trm/subs.h"
-#include "trm/plot.h"
+#include "trm/format.h"
 #include "trm/vec3.h"
 #include "trm/input.h"
-#include "trm/format.h"
 #include "trm/roche.h"
 #include "trm/lcurve.h"
+#include "trm/plot.h"
+
+
+
 
 int Lcurve::Fobj::neval = 0;
 double Lcurve::Fobj::chisq_min;
