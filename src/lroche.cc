@@ -2,7 +2,7 @@
 
 !!begin
 !!title    Computes the light-curve of a sphere and a Roche distorted star
-!!author   T.R.Marsh 
+!!author   T.R.Marsh
 !!created  02 Sep  2003
 !!revised  20 Sep 2009
 !!descr    Computes the light-curve of a sphere and a Roche distorted star
@@ -18,9 +18,9 @@ Ser and can optionally include a disc and bright-spot as well. It includes
 reprocessing and eclipses. The reprocessing is computed using the simple
 addition of fluxes method, assuming that the irradiating star can be treated
 as a point, and not including any 'back heating'. Phase 0 is defined as the
-point when star 1 is furthest from the observer.  The star grids can de adapted 
-somewhat to be focussed on eclipses and long exposures trapezoidally sub-divided 
-to model smearing. Other physics included in !!emph{lroche}: Doppler beaming, 
+point when star 1 is furthest from the observer.  The star grids can de adapted
+somewhat to be focussed on eclipses and long exposures trapezoidally sub-divided
+to model smearing. Other physics included in !!emph{lroche}: Doppler beaming,
 gravitational lensing, Roemer time delays, asynchronous rotation of the stellar components.
 Physics not included: eccentric orbits!
 
@@ -32,7 +32,7 @@ formats.
 
 !!head2 Invocation
 
-lroche model data [time1 time2 ntime expose] noise seed nfile [output] (plot) [(roff) scale [ssfac]/[sstar1 sstar2 sdisc spot]]
+lroche model data [time1 time2 ntime expose] noise seed nfile [output] (device) [(roff) scale [ssfac]/[sstar1 sstar2 sdisc spot]]
 
 !!head2 Arguments
 
@@ -41,20 +41,20 @@ lroche model data [time1 time2 ntime expose] noise seed nfile [output] (plot) [(
 !!arg{data}{Data file as a template to compute the fit. 'none' to indicate that
 you do not have one and will define times instead. In the case of real data, the fit
 will be scaled automatically to minimise chi**2. Data files requires six columns which
-are: mid-exposure times, exposure times (same units as times), fluxes, uncertainties on fluxes, weight factors and 
+are: mid-exposure times, exposure times (same units as times), fluxes, uncertainties on fluxes, weight factors and
 finally integers to represent the number of subdivisions to model finite exposure effects. The weight factors
 allow you to change the weighting of a point to the overall chi**2 without changing its uncertainty.}
 !!arg{time1}{If data = 'none', first time to compute.}
 !!arg{time2}{If data = 'none', last time to compute.}
 !!arg{ntime}{If data = 'none', number of times to compute.}
 !!arg{expose}{If data = 'none', length of exposure}
-!!arg{noise}{If data = 'none', amount of noise to add to the results, RMS. In the case of real data, 
+!!arg{noise}{If data = 'none', amount of noise to add to the results, RMS. In the case of real data,
 this is used a multiplier of the real error bars.}
 !!arg{seed}{Seed integer}
 !!arg{nfile}{Number of files to store, each with its own noise; only the first will be plotted if
 nfile > 1. 0 is possible in which case there will be no output.}
 !!arg{output}{File to save the results in the form of rows each with
-time, exposure time, flux and uncertainty. If nfile > 1, then the files 
+time, exposure time, flux and uncertainty. If nfile > 1, then the files
 will have a number added, as in data001}
 !!arg{plot}{If plot=true, then the results will be plotted}
 !!arg{roff}{Offset to add to the residuals when plotting a fit to data}
@@ -73,7 +73,7 @@ fluxes, the value of ssfac returned = 10^29 (a/d)^2. If you express a in solar r
 !!head2 Parameter file
 
 The model parameters come in two types, physical and computational. 'Physical' in this case are ones which have an initial
-value, a range of plausible variation and a step size for derivative computation. 'Computational' are ones which cannot 
+value, a range of plausible variation and a step size for derivative computation. 'Computational' are ones which cannot
 be varied and just have a value. !!emph{lroche} ignores the variable/non-variable distinction which are for the fitting
 routines such as !!ref{levmarq.html}{levmarq}. The parameter file consists of a series of lines such as:
 <pre>
@@ -108,26 +108,26 @@ Here is the full list of parameters.
 !!arg{r1}{Radius of star 1, scaled by the binary separation}
 !!arg{r2}{Radius of star 2, scaled by the binary separation. The radius is measured along the line of centres towards star 1. Set = -1 and hold fixed for
 Roche lobe filling stars.}
-!!arg{cphi3}{Third contact phase (star 1 starting to emerge from eclipse). This is an alternative way to specify the radii, based on a 
-spherical approximation fot the two stars, i.e. unless the stars are spherical, it is not quite the true third contact. The radii will 
-be computed from the contact phases according to the two equations r2+r1 = sqrt(1 - sin^2 i cos^2 (2*pi*cphi4)) and 
-r2-r1 = sqrt(1 - sin^2 i cos^2 (2*pi*cphi3)). The radii returned are precise, just the interpretation as contact phases that is not 
-precise. cphi3 and cphi4 need the boolean use_radii set to 0 to enabled. The reason for using them is to help with MCMC iterations as 
+!!arg{cphi3}{Third contact phase (star 1 starting to emerge from eclipse). This is an alternative way to specify the radii, based on a
+spherical approximation fot the two stars, i.e. unless the stars are spherical, it is not quite the true third contact. The radii will
+be computed from the contact phases according to the two equations r2+r1 = sqrt(1 - sin^2 i cos^2 (2*pi*cphi4)) and
+r2-r1 = sqrt(1 - sin^2 i cos^2 (2*pi*cphi3)). The radii returned are precise, just the interpretation as contact phases that is not
+precise. cphi3 and cphi4 need the boolean use_radii set to 0 to enabled. The reason for using them is to help with MCMC iterations as
 they prevent the nasty curved correlation between r1, r2 and i. This can save a huge amount of CPU time.}
 !!arg{cphi4}{Fourth contact phase, star 1 fully emerged from eclipse. See cphi3 for details.}
 !!arg{spin1}{This is the ratio of the spin frequency of star 1 to the orbital frequency. In this case a modified form of the Roche potential is used for star 1}
 !!arg{spin2}{This is the ratio of the spin frequency of star 2 to the orbital frequency. In this case a modified form of the Roche potential is used for star 2}
 !!arg{t1}{Temperature of star 1, Kelvin. This is really a substitute for surface brightness which is set assuming a black-body given this parameter. If it was not for irradiation that would be exactly what this is, a one-to-one replacement for surface brightness. Irradiation however introduces bolometric luminosities effectively and breaks the direct link. Some would then argue that one must use model atmospheres except at the moment irradiated model atmosphere are in their infancy.}
 !!arg{t2}{Temperature of star 2, Kelvin. Set < 0 in order that it does not get scaled when using the iscale parameter.}
-!!arg{ldc1_1, etc}{Limb darkening for stars is quite hard to specify precisely. Here we adopt a 4 coefficient 
-approach which can either represent a straighforward polynimal expanion of the form I(mu) = 1 - \sum_i a_i (1-mu)^i, 
-or rather better in some cases Claret's 4-coefficient formula I(mu) = 1 - \sum_i a_i (1 - mu^(i/2)) (i=1 to 4). 
-You specify these by supplying the 4 coefficients for each star (which for form's sake are potentially variable but 
-you would probably be unwise to let them be free) and later on a parameter to say whether it is the polynomial or 
-Claret's representation. The polynomial allows one to use linear and quadratic limb darkening amongst others by setting 
-the upper coefficients = 0. ldc1_1 is the first coefficient of star 1, ldc1_2 is the second, etc, while ldc2_1 
+!!arg{ldc1_1, etc}{Limb darkening for stars is quite hard to specify precisely. Here we adopt a 4 coefficient
+approach which can either represent a straighforward polynimal expanion of the form I(mu) = 1 - \sum_i a_i (1-mu)^i,
+or rather better in some cases Claret's 4-coefficient formula I(mu) = 1 - \sum_i a_i (1 - mu^(i/2)) (i=1 to 4).
+You specify these by supplying the 4 coefficients for each star (which for form's sake are potentially variable but
+you would probably be unwise to let them be free) and later on a parameter to say whether it is the polynomial or
+Claret's representation. The polynomial allows one to use linear and quadratic limb darkening amongst others by setting
+the upper coefficients = 0. ldc1_1 is the first coefficient of star 1, ldc1_2 is the second, etc, while ldc2_1
 is the first coefficient for star 2 etc. See limb1, limb2, mucrit1, mucrit2 below.}
-!!arg{velocity_scale}{Velocity scale,  sum of unprojected orbital speeds, used for accounting for 
+!!arg{velocity_scale}{Velocity scale,  sum of unprojected orbital speeds, used for accounting for
 Doppler beaming and gravitational lensing. On its own this makes little difference to the light curve, so you should
 not usually let it be free, but you might want to if you have independent K1 or K2 information which you can apply as part of a prior.}
 !!arg{beam_factor1}{The factor to use for Doppler beaming from star 1. This corresponds to the factor (3-alpha)
@@ -145,29 +145,29 @@ requires the velocity_scale to be set.}
 superior conjunction) of star 1, same units as times.}
 !!arg{period}{Orbital period, same units as times.}
 !!arg{pdot}{Quadratic coefficient of ephemeris, same units as times}
-!!arg{deltat}{Time shift between the primary and secondary eclipses to allow for small eccentricities and Roemer delays in the orbit. The 
-sign is defined such that deltat > 0 implies that the secondary eclipse suffers a delay compared to the primary compared to precisely 128 
-difference. deltat < 0 implies the secondary eclipse comes a little earlier than expected. Assuming that the "primary eclipse" is the eclipse 
+!!arg{deltat}{Time shift between the primary and secondary eclipses to allow for small eccentricities and Roemer delays in the orbit. The
+sign is defined such that deltat > 0 implies that the secondary eclipse suffers a delay compared to the primary compared to precisely 128
+difference. deltat < 0 implies the secondary eclipse comes a little earlier than expected. Assuming that the "primary eclipse" is the eclipse
 of star 1, then, using the same sign convention, the Roemer delay is given by = P*(K1-K2)/(Pi*c) where P is the orbital period, K1 and K2 are
 the usual projected radial velocity semi-amplitudes Pi = 3.14159.., and c = speed of light. See Kaplan (2010) for more details. The delay
 is implemented by adjusting the orbital phase according to phi' = phi + (deltat/2/P)*(cos(2*Pi*phi)-1), i.e. there is no change at primary eclipse
 but a delay of -deltat/P by the secondary eclipse.}
 !!arg{gravity_dark}{Gravity darkening coefficient. Only matters for the Roche distorted case, but is prompted for always.
-There are two alternatives for this. In the standard old method, the temperatures on the stars are set equal to t2*(g/gr)**gdark 
-where g is the gravity at a given point and gr is the gravity at the point furthest from the primary (the 'backside' of the secondary). 
+There are two alternatives for this. In the standard old method, the temperatures on the stars are set equal to t2*(g/gr)**gdark
+where g is the gravity at a given point and gr is the gravity at the point furthest from the primary (the 'backside' of the secondary).
 For a convectuive atmosphere, 0.08 is the usual value while 0.25 is the number for a radiative atmosphere. This is translated into
 intensity using a blackbody approx. If you want to bypass the BB approx and invoke a direct relation flux ~ (g/gr)**gdark relation
 you should set gdark_bolom (see below) to 0 (false.)}
 !!arg{absorb}{The fraction of the irradiating flux from star 1 absorbed by star 2}
 !!arg{slope, quad, cube}{Fudge factors to help cope with any trends in the data
-as a result of e.g. airmass effects. The fit is multiplied by 
-(1+x*(slope+x*(quad+x*cube))) where x is the time scaled so that it varies 
+as a result of e.g. airmass effects. The fit is multiplied by
+(1+x*(slope+x*(quad+x*cube))) where x is the time scaled so that it varies
 from -1 to 1 from start to end of the data. One should expect these number
-to have absolute value << 1.}  
+to have absolute value << 1.}
 !!arg{third}{Third light contribution. Simply adds to whatever flux is
-calculated and will be subject to auto-scaling like other flux. It only 
+calculated and will be subject to auto-scaling like other flux. It only
 applies if global scaling rather than individual component scaling is used.
-Third light is assumed strictly constant and is not subject to the slope, 
+Third light is assumed strictly constant and is not subject to the slope,
 quad, cube parameters.}
 !!table
 
@@ -233,14 +233,14 @@ exponentially to the surrounding photosphere over this number (in degrees)}
 !!arg{height_disc}{Half height of disc at radius = 1. The height varies as a power law of radius}
 !!arg{beta_disc}{Exponent of power law in radius of disc. Should be >= 1 to make concave disc; convex will not eclipse
 properly.}
-!!arg{temp_disc}{Temperature of outer part of disc. This is little more than a flux normalisation parameter but 
+!!arg{temp_disc}{Temperature of outer part of disc. This is little more than a flux normalisation parameter but
 it is easier to think in terms of temperature}
 !!arg{texp_disc}{Exponent of surface brightness (NB: not temperature) over disc}
 !!arg{lin_limb_disc}{Linear limb darkening coefficient of the disc}
 !!arg{quad_limb_disc}{Quadratic limb darkening coefficient of the disc}
-!!arg{temp_edge}{Temperature at perpendicular edge of disc. Irradiation from the secondary is allowed so you should think of a bright rim at primary eclipse. Limb darkeining parameters of the 
+!!arg{temp_edge}{Temperature at perpendicular edge of disc. Irradiation from the secondary is allowed so you should think of a bright rim at primary eclipse. Limb darkeining parameters of the
 disc are applied}
-!!arg{absorb_edge}{Amount of secondary flux absorbed and reprocessed. This effect should lead 
+!!arg{absorb_edge}{Amount of secondary flux absorbed and reprocessed. This effect should lead
 to a sinusoidal variation with flux maximum at orbital phase 128. It was introduced to model
 a possible accreting sdO/WD system discovered by Thomas Kupfer}
 
@@ -254,7 +254,7 @@ a possible accreting sdO/WD system discovered by Thomas Kupfer}
 !!arg{height_spot}{Height of spot (units of binary separation). This is only a normalisation constant.}
 !!arg{expon_spot}{Spot is modeled as x**n*exp(-(x/l)**m). This parameter specifies the exponent 'n'}
 !!arg{epow_spot}{This is the exponent m in the above expression}
-!!arg{angle_spot}{This is the angle made by the line of elements of the spot measured in the direction of binary motion relative to 
+!!arg{angle_spot}{This is the angle made by the line of elements of the spot measured in the direction of binary motion relative to
 the rim of the disc so that the "standard" value should be 0.}
 !!arg{yaw_spot}{Allows the spot elements effectively to beam their light away from the perpendicular to the line of elements.
 Measured as an angle in the same sense as angle_spot. 0 means standard perpendicular beaming.}
@@ -306,7 +306,7 @@ the fine grid use to phase 1285 to 1285.}
 !!arg{glens1}{Account for gravitational lensing by star 1. If you use this roche1 must be = 0 and the velocity_scale}
 !!arg{use_radii}{If set = 1, the parameters r1 and r2 will be used to set the radii directly. If not, the third and fourth contact phases,
 cphi3 and cphi4, will be used instead (see description for cphi3 for details).}
-!!arg{tperiod}{The true orbital period in days. This is required, along with velocity_scale, if gravitational lensing is 
+!!arg{tperiod}{The true orbital period in days. This is required, along with velocity_scale, if gravitational lensing is
 being applied to calculate proper dimensions in the system.}
 !!arg{gdark_bolom}{True if the gravity darkening coefficient represents the bolometric value where T is proportional to
 gravity to the power set by the coefficient. This is translated to flux variations using the black-body approximation.
@@ -368,25 +368,25 @@ int main(int argc, char *argv[])
         Subs::Input input(argc, argv, Lcurve::LCURVE_ENV, Lcurve::LCURVE_DIR);
 
         // Sign-in input variables
-        input.sign_in("model",    Subs::Input::GLOBAL, Subs::Input::PROMPT);
-        input.sign_in("data",     Subs::Input::GLOBAL, Subs::Input::PROMPT);
-        input.sign_in("time1",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("time2",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("ntime",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("expose",   Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("ndivide",  Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("noise",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("seed",     Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("nfile",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("output",   Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("plot", Subs::Input::LOCAL, Subs::Input::PROMPT);
-        input.sign_in("roff",     Subs::Input::LOCAL,  Subs::Input::NOPROMPT);
-        input.sign_in("scale",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("sstar1",   Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("sstar2",   Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("sdisc",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("sspot",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-        input.sign_in("ssfac",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
+        input.sign_in("model", Subs::Input::GLOBAL, Subs::Input::PROMPT);
+        input.sign_in("data", Subs::Input::GLOBAL, Subs::Input::PROMPT);
+        input.sign_in("time1", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("time2", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("ntime", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("expose", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("ndivide", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("noise", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("seed", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("nfile", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("output", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("device", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("roff", Subs::Input::LOCAL, Subs::Input::NOPROMPT);
+        input.sign_in("scale", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("sstar1", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("sstar2", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("sdisc", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("sspot", Subs::Input::LOCAL, Subs::Input::PROMPT);
+        input.sign_in("ssfac", Subs::Input::LOCAL, Subs::Input::PROMPT);
 
         std::string smodel;
         input.get_value("model", smodel, "model",
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
         if (!no_file)
         {
             data.rasc(sdata);
-            if(data.size() == 0)
+            if (data.size() == 0)
                 throw Lcurve::Lcurve_Error("No data read from file.");
             copy = data;
         }
@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
             Lcurve::Datum datum = {0., expose, 0., noise, 1., ndivide};
             for (int i = 0; i < ntime; i++)
             {
-                datum.time   = time1 + (time2-time1)*i/(ntime-1);
+                datum.time = time1 + (time2 - time1) * i / (ntime - 1);
                 data.push_back(datum);
             }
         }
@@ -449,15 +449,15 @@ int main(int argc, char *argv[])
         input.get_value("nfile", nfile, 1, 0, 20000,
                         "number of files to generate");
         std::string sout;
-        if(nfile > 0)
+        if (nfile > 0)
             input.get_value("output", sout, "data", "file/root to save data");
-        bool makeplot = false;
-        input.get_value("plot", makeplot, true, "plot results?");
+        std::string device;
+        input.get_value("device", device, "null", "plplot device (null for no plotting)");
         double roff;
         input.get_value("roff", roff, 0., -DBL_MAX, DBL_MAX, "off to add to residuals when plotting a fit to data");
 
         bool scale = false;
-        if(!no_file)
+        if (!no_file)
             input.get_value("scale", scale, true, "autoscale?");
         Subs::Buffer1D<double> sfac(4);
         if (!scale)
@@ -468,9 +468,9 @@ int main(int argc, char *argv[])
                                 -DBL_MAX, DBL_MAX, "star 1 scale factor");
                 input.get_value("sstar2", sfac[1], 1.,
                                 -DBL_MAX, DBL_MAX, "star 2 scale factor");
-                input.get_value("sdisc",  sfac[2], 1.,
+                input.get_value("sdisc", sfac[2], 1.,
                                 -DBL_MAX, DBL_MAX, "disc scale factor");
-                input.get_value("sspot",  sfac[3], 1.,
+                input.get_value("sspot", sfac[3], 1.,
                                 -DBL_MAX, DBL_MAX, "spot scale factor");
             }
             else
@@ -500,8 +500,8 @@ int main(int argc, char *argv[])
             {
                 input.set_default("sstar1", sfac[0]);
                 input.set_default("sstar2", sfac[1]);
-                input.set_default("sdisc",  sfac[2]);
-                input.set_default("sspot",  sfac[3]);
+                input.set_default("sdisc", sfac[2]);
+                input.set_default("sspot", sfac[3]);
                 std::cout << "Scale factors = " << form(sfac[0]) << ", "
                           << form(sfac[1]) << ", " << form(sfac[2])
                           << ", " << form(sfac[3]) << std::endl;
@@ -522,35 +522,34 @@ int main(int argc, char *argv[])
         if (!no_file)
         {
             // Scale error bars
-            for(size_t i=0; i<data.size(); i++)
+            for (size_t i = 0; i < data.size(); i++)
                 data[i].ferr *= noise;
         }
 
-        int ndig = int(log10(double(nfile)+128))+1;
+        int ndig = int(log10(double(nfile) + 128)) + 1;
 
         // Add noise
-        for(size_t i=0; i<data.size(); i++)
-            data[i].flux = fit[i] + data[i].ferr*Subs::gauss2(seed);
+        for (size_t i = 0; i < data.size(); i++)
+            data[i].flux = fit[i] + data[i].ferr * Subs::gauss2(seed);
 
         // make plot
-        if ((nfile == 0 || nfile == 1) && makeplot)
+        if ((nfile == 0 || nfile == 1) && device != "null")
         {
-            // use null as device name for now, gets chosen later anyway
-            Subs::Plot plot('null');
-            plstream* pls;
+            Subs::Plot plot(device);
+            plstream *pls;
             pls = plot.get_plstream();
             int n;
             PLINT r[6]; // Declare the largest size needed
             PLINT g[6];
             PLINT b[6];
 
-                PLINT temp_r[6] = {255, 0, 178, 0, 0, 178}; // Temporary initialization
-                PLINT temp_g[6] = {255, 0, 0, 153, 0, 178};
-                PLINT temp_b[6] = {255, 0, 0, 0, 128, 178};
-                std::copy(temp_r, temp_r + 6, r); // Copy to the declared arrays
-                std::copy(temp_g, temp_g + 6, g);
-                std::copy(temp_b, temp_b + 6, b);
-                n = 6;
+            PLINT temp_r[6] = {255, 0, 178, 0, 0, 178}; // Temporary initialization
+            PLINT temp_g[6] = {255, 0, 0, 153, 0, 178};
+            PLINT temp_b[6] = {255, 0, 0, 0, 128, 178};
+            std::copy(temp_r, temp_r + 6, r); // Copy to the declared arrays
+            std::copy(temp_g, temp_g + 6, g);
+            std::copy(temp_b, temp_b + 6, b);
+            n = 6;
 
             plot.set_colors(r, g, b, n);
             pls->scolbg(255, 255, 255);
@@ -582,12 +581,12 @@ int main(int argc, char *argv[])
                 x2 -= con;
             }
 
-            double range = x2-x1;
-            x1   -= range/10.;
-            x2   += range/10.;
-            range = y2-y1;
-            y1   -= range/10;
-            y2   += range/10;
+            double range = x2 - x1;
+            x1 -= range / 10.;
+            x2 += range / 10.;
+            range = y2 - y1;
+            y1 -= range / 10;
+            y2 += range / 10;
 
             pls->schr(1, 4.5);
             pls->col0(1);
@@ -603,10 +602,10 @@ int main(int argc, char *argv[])
                 {
                     pls->col0(5);
                     pls->width(1);
-                    //plpoin(1, copy[i].time-con, copy[i].flux - copy[i].ferr);
-                    //plline(1, copy[i].time-con, copy[i].flux + copy[i].ferr);
-                    pls->join(copy[i].time-con, copy[i].flux - copy[i].ferr,
-                           copy[i].time-con, copy[i].flux + copy[i].ferr);
+                    // plpoin(1, copy[i].time-con, copy[i].flux - copy[i].ferr);
+                    // plline(1, copy[i].time-con, copy[i].flux + copy[i].ferr);
+                    pls->join(copy[i].time - con, copy[i].flux - copy[i].ferr,
+                              copy[i].time - con, copy[i].flux + copy[i].ferr);
 
                     pls->col0(3);
                     pls->width(3);
@@ -614,16 +613,16 @@ int main(int argc, char *argv[])
                     PLFLT y[1] = {copy[i].flux};
                     pls->poin(1, x, y, 17);
 
-                    //plpoin(copy[i].time-con, copy[i].flux, 17);
+                    // plpoin(copy[i].time-con, copy[i].flux, 17);
 
                     pls->col0(5);
                     pls->width(1);
-                    //plpoin(1, copy[i].time-con,
-                    //        roff + copy[i].flux - data[i].flux - copy[i].ferr);
-                    //plline(1, copy[i].time-con,
-                    //        roff + copy[i].flux - data[i].flux + copy[i].ferr);
-                    pls->join(copy[i].time-con, roff + copy[i].flux - data[i].flux - copy[i].ferr,
-                           copy[i].time-con, roff + copy[i].flux - data[i].flux + copy[i].ferr);
+                    // plpoin(1, copy[i].time-con,
+                    //         roff + copy[i].flux - data[i].flux - copy[i].ferr);
+                    // plline(1, copy[i].time-con,
+                    //         roff + copy[i].flux - data[i].flux + copy[i].ferr);
+                    pls->join(copy[i].time - con, roff + copy[i].flux - data[i].flux - copy[i].ferr,
+                              copy[i].time - con, roff + copy[i].flux - data[i].flux + copy[i].ferr);
 
                     pls->width(3);
                     pls->col0(3);
@@ -645,16 +644,16 @@ int main(int argc, char *argv[])
                 // for(size_t i=1; i<data.size(); i++)
                 //     pldraw(data[i].time-con, data[i].flux);
 
-                //create plfloat vectors 
+                // create plfloat vectors
                 PLFLT *x = new PLFLT[data.size()];
                 PLFLT *y = new PLFLT[data.size()];
                 for (size_t i = 0; i < data.size(); i++)
                 {
-                    x[i] = data[i].time-con;
+                    x[i] = data[i].time - con;
                     y[i] = data[i].flux;
                 }
-                //plot the line from the points
-                pls->line( data.size(), x, y);
+                // plot the line from the points
+                pls->line(data.size(), x, y);
             }
             else
             {
@@ -663,8 +662,8 @@ int main(int argc, char *argv[])
                     pls->col0(1);
                     // plmove(data[i].time-con, data[i].flux - data[i].ferr);
                     // pldraw(data[i].time-con, data[i].flux + data[i].ferr);
-                    pls->join(data[i].time-con, data[i].flux - data[i].ferr,
-                           data[i].time-con, data[i].flux + data[i].ferr);
+                    pls->join(data[i].time - con, data[i].flux - data[i].ferr,
+                              data[i].time - con, data[i].flux + data[i].ferr);
                     pls->col0(3);
                     PLFLT x1[1] = {data[i].time - con};
                     PLFLT y1[1] = {data[i].flux};
@@ -685,10 +684,10 @@ int main(int argc, char *argv[])
             for (int n = 0; n < nfile; n++)
             {
                 // Add noise
-                for(size_t i=0; i<data.size(); i++)
-                    data[i].flux = fit[i] + data[i].ferr*Subs::gauss2(seed);
+                for (size_t i = 0; i < data.size(); i++)
+                    data[i].flux = fit[i] + data[i].ferr * Subs::gauss2(seed);
 
-                std::string outfile = sout + Subs::str(n+1, ndig);
+                std::string outfile = sout + Subs::str(n + 1, ndig);
                 data.wrasc(outfile);
                 std::cout << "Written data to " << outfile << std::endl;
             }
