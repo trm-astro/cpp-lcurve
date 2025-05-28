@@ -862,6 +862,8 @@ namespace Lcurve {
   //! Re-scales a fit to minimise chi**2
   double re_scale(const Lcurve::Data& data, Subs::Array1D<double>& fit,
 		  double& chisq, double& wnok);
+  
+  int run_lroche(const std::string& model_file, const std::string& data_file);
 
 };
 
