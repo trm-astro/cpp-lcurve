@@ -865,6 +865,8 @@ namespace Lcurve {
   
   int run_lroche(const std::string& model_file, const std::string& data_file);
 
+  int run_lprofile(const std::string& model_file);
+
 };
 
 #endif

@@ -29,6 +29,7 @@ set(SOURCES
     src/comp_gravity.cc
     src/comp_radius.cc
     src/lroche.cc
+    src/lprofile.cc
 )
 
 ############################################################

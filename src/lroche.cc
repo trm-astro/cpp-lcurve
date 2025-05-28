@@ -365,6 +365,7 @@ namespace Lcurve {
     int run_lroche(const std::string& model_file, const std::string& data_file)
     {
         // Fake argc and argv for our python interface patch
+        // This forces to use the model_file and data_file
         const char* argv[] = {"lroche", model_file.c_str(), data_file.c_str()};
         int argc = 3; 
 
