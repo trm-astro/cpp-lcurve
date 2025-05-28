@@ -28,6 +28,7 @@ set(SOURCES
     src/star_eclipse.cc
     src/comp_gravity.cc
     src/comp_radius.cc
+    src/lroche.cc
 )
 
 ############################################################

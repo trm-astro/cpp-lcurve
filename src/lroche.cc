@@ -366,7 +366,7 @@ namespace Lcurve {
     {
         // Fake argc and argv for our python interface patch
         const char* argv[] = {"lroche", model_file.c_str(), data_file.c_str()};
-        int argc = 3;
+        int argc = 3; 
 
         try
         {
