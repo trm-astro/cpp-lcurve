@@ -356,13 +356,13 @@ true, then the third light parameter will be ignored.}
 
 
 
-int Lcurve::Fobj::neval = 0;
-double Lcurve::Fobj::chisq_min;
-Subs::Buffer1D<double> Lcurve::Fobj::scale_min;
+// int Lcurve::Fobj::neval = 0;
+// double Lcurve::Fobj::chisq_min;
+// Subs::Buffer1D<double> Lcurve::Fobj::scale_min;
 
 namespace Lcurve {
     // lroche function
-    int run_lroche(const std::string& model_file, const std::string& datafile)
+    int run_lroche(const std::string& model_file, const std::string& data_file)
     {
         // Fake argc and argv for our python interface patch
         const char* argv[] = {"lroche", model_file.c_str(), data_file.c_str()};
