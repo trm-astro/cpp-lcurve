@@ -63,6 +63,7 @@ value of lambda is multiplied or divided by 10 each step according to progress.}
 #include <cfloat>
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include "trm/subs.h"
 #include "trm/array1d.h"
 #include "trm/buffer2d.h"
@@ -279,12 +280,13 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
     Subs::Buffer1D<double> sfac(4), tsfac(4);
     Subs::Array1D<double> fit;
     double wdwarf, wnok, logg1, logg2, rv1, rv2;
-
+	std::cout << "lmcomp: computing light curve" << std::endl;
     Lcurve::light_curve_comp(model, data, true, true, false, sfac, fit, wdwarf,
-                             chisq, wnok, logg1, logg2, rv1, rv2);
+                             chisq, wnok, logg1, logg2, rv1, rv2);					 
     if(wnok == 0.0)
         throw Lcurve::Lcurve_Error("void Lmfunc::lmcomp: no good data!");
     Lmfunc::neval++;
+	std::cout << "lmcomp: light curve computed" << std::endl;
 
     // Compute derivatives using finite differences centred on the
     // current point, displacing according to the step sizes.
@@ -292,10 +294,27 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
     Subs::Array1D<double> buff(data.size()), tparam;
     std::vector<Subs::Array1D<double> > deriv(centre.size());
     double tchisq;
+	//print all of centre and dstep
+	for(int i=0; i<centre.size(); i++){
+		std::cout << "centre[" << i << "] = " << centre[i] << ", dstep[" << i << "] = " << dstep[i] << std::endl;
+	}
 
+	// Set the scale factors for the model
+	tsfac[0] = sfac[0];
+	tsfac[1] = sfac[1];
+	tsfac[2] = sfac[2];
+	tsfac[3] = sfac[3];
+
+	// Compute derivatives
+	std::cout << "lmcomp: computing derivatives" << std::endl;
     for(int i=0; i<centre.size(); i++){
-        tparam     = centre;
-        tparam[i] += dstep[i];
+		tparam     = centre;
+		std::cout << std::fixed << std::setprecision(5); // Set fixed-point notation and precision to 5
+		std::cout << "Before update: tparam[" << i << "] = " << tparam[i] 
+          << ", centre[" << i << "] = " << centre[i] 
+          << ", dstep[" << i << "] = " << dstep[i] << std::endl;
+		tparam.ptr()[i] += dstep[i];
+		std::cout << "After update: tparam[" << i << "] = " << tparam[i] << std::endl;
         model.set_param(tparam);
         Lcurve::light_curve_comp(model, data, true, true, false, tsfac, deriv[i],
                                  wdwarf, tchisq, wnok, logg1, logg2, rv1, rv2);
@@ -304,9 +323,9 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
         // Next four lines are an attempt to reduce round-off error
         // in the finite difference.
         double temp = tparam[i];
-        tparam[i] -= 2.*dstep[i];
+        tparam.ptr()[i] -= 2.*dstep[i];
         double h = temp - tparam[i];
-        tparam[i] = temp - h;
+        tparam.prt()[i] = temp - h;
 
         model.set_param(tparam);
         Lcurve::light_curve_comp(model, data, true, true, false, tsfac, buff,
@@ -317,7 +336,9 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
         deriv[i] /= h;
 
     }
+	std::cout << "lmcomp: derivatives computed" << std::endl;
 
+	std::cout << "lmcomp: computing alpha and beta" << std::endl;
     // Resave the stored parameters
     model.set_param(centre);
 
@@ -346,6 +367,8 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
     for(int j=1; j<model.nvary(); j++)
 	for(int k=0; k<j; k++) alpha[k][j] = alpha[j][k];
 
+	std::cout << "lmcomp: alpha and beta computed" << std::endl;
+
     if(start || chisq < Lmfunc::chisq_min){
 		Lmfunc::scale_min = sfac;
 		Lmfunc::chisq_min = chisq;
@@ -353,7 +376,7 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
 		std::cout << "Weighted chi**2 = " << form(chisq) << ", scale factors = " << 
 			form(sfac[0]) << ", " << form(sfac[1]) << ", " << form(sfac[2]) << ", " << form(sfac[3]) << ", neval = " << neval << std::endl;
     }
-
+	std::cout << "lmcomp_done" << std::endl;
 }  
 
 /**
