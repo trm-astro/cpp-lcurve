@@ -30,6 +30,7 @@ set(SOURCES
     src/comp_radius.cc
     src/lroche.cc
     src/lprofile.cc
+    src/levmarq.cc
 )
 
 ############################################################

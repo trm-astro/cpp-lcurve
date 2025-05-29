@@ -867,6 +867,8 @@ namespace Lcurve {
 
   int run_lprofile(const std::string& model_file);
 
+  int run_levmarq(const std::string& model_file, const std::string& data_file);
+
 };
 
 #endif

@@ -113,152 +113,163 @@ private:
 
 void lmfit(Lmfunc& func, double& chisq, double& alambda, Subs::Buffer2D<double>& covar);
 
-int    Lcurve::Fobj::neval = 0;
-double Lcurve::Fobj::chisq_min;
-Subs::Buffer1D<double> Lcurve::Fobj::scale_min;
+//int    Lcurve::Fobj::neval = 0;
+//double Lcurve::Fobj::chisq_min;
+//Subs::Buffer1D<double> Lcurve::Fobj::scale_min;
 
 int    Lmfunc::neval = 0;
 double Lmfunc::chisq_min;
 Subs::Buffer1D<double> Lmfunc::scale_min;
 
 // Main program
-int main(int argc, char* argv[]){
+namespace Lcurve {
 
-    try{
+	int run_levmarq(const std::string& model_file, const std::string& data_file)
+	{
+		const char* argv[] = {"levmarq", model_file.c_str(), data_file.c_str()};
+		int argc = 3;
+		std::cout << "Running levmarq" << std::endl;
 
-	// Construct Input object
-	Subs::Input input(argc, argv, Lcurve::LCURVE_ENV, Lcurve::LCURVE_DIR);
+		try{
 
-	// Sign-in input variables
-	input.sign_in("model",    Subs::Input::GLOBAL, Subs::Input::PROMPT);
-	input.sign_in("data",     Subs::Input::GLOBAL, Subs::Input::PROMPT);
-	input.sign_in("nmax",     Subs::Input::LOCAL,  Subs::Input::PROMPT);
-	input.sign_in("delta",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-	input.sign_in("lmax",     Subs::Input::LOCAL,  Subs::Input::PROMPT);
-	input.sign_in("scale",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
-	input.sign_in("output",   Subs::Input::GLOBAL, Subs::Input::PROMPT);
+			// Construct Input object
+			Subs::Input input(argc, const_cast<char**>(argv), Lcurve::LCURVE_ENV, Lcurve::LCURVE_DIR);
 
-	std::string smodel;
-	input.get_value("model", smodel, "model", "input model file");
-	Lcurve::Model model(smodel);
+			// Sign-in input variables
+			input.sign_in("model",    Subs::Input::GLOBAL, Subs::Input::PROMPT);
+			input.sign_in("data",     Subs::Input::GLOBAL, Subs::Input::PROMPT);
+			input.sign_in("nmax",     Subs::Input::LOCAL,  Subs::Input::PROMPT);
+			input.sign_in("delta",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
+			input.sign_in("lmax",     Subs::Input::LOCAL,  Subs::Input::PROMPT);
+			input.sign_in("scale",    Subs::Input::LOCAL,  Subs::Input::PROMPT);
+			input.sign_in("output",   Subs::Input::GLOBAL, Subs::Input::PROMPT);
 
-	std::string sdata;
-	input.get_value("data", sdata, "data", "data file (time, exposure, flux, error)");    
-	Lcurve::Data data(sdata);
+			std::string smodel;
+			input.get_value("model", smodel, "model", "input model file");
+			Lcurve::Model model(smodel);
 
-	int nmax;
-	input.get_value("nmax", nmax, 10, 1, INT_MAX, "maximum number of iterations"); 
+			std::string sdata;
+			input.get_value("data", sdata, "data", "data file (time, exposure, flux, error)");    
+			Lcurve::Data data(sdata);
 
-	double delta;
-	input.get_value("delta", delta, 0.001, 0., DBL_MAX, "the minimum decrease in chi**2"); 
+			int nmax;
+			input.get_value("nmax", nmax, 10, 1, INT_MAX, "maximum number of iterations"); 
 
-	double lmax;
-	input.get_value("lmax", lmax, 1e12, 10., DBL_MAX, "the maximum value of lambda"); 
+			double delta;
+			input.get_value("delta", delta, 0.001, 0., DBL_MAX, "the minimum decrease in chi**2"); 
 
-	bool scale;
-	input.get_value("scale", scale, true, "scale errors to give reduced chisq = 1?"); 
+			double lmax;
+			input.get_value("lmax", lmax, 1e12, 10., DBL_MAX, "the maximum value of lambda"); 
 
-	std::string omodel;
-	input.get_value("output", omodel, "model", "output model file");   
+			bool scale;
+			input.get_value("scale", scale, true, "scale errors to give reduced chisq = 1?"); 
 
-	Lmfunc func(model, data);
-	Lmfunc::neval = 0;
+			std::string omodel;
+			input.get_value("output", omodel, "model", "output model file");   
+			
+			std::cout << "start" << std::endl;
+			Lmfunc func(model, data);
+			Lmfunc::neval = 0;
+			std::cout << "end of start" << std::endl;
 
-	double wdof = 0.;
-	for(size_t i=0; i<data.size(); i++)
-	    wdof += data[i].weight;
-	if(wdof <= 0.)
-	    throw Lcurve::Lcurve_Error("Total weight of input data <= 0!");
+			double wdof = 0.;
+			for(size_t i=0; i<data.size(); i++)
+				wdof += data[i].weight;
+			if(wdof <= 0.)
+				throw Lcurve::Lcurve_Error("Total weight of input data <= 0!");
 
-	Subs::Buffer2D<double> covar;
-	double lambda = -1., lambda_old, chisq = 0, chisq_old = -1.;
-	int ncount = 0, nfail = 0;
-	const int NFMAX = 3;
-	Subs::Format val(17), err(8);
+			Subs::Buffer2D<double> covar;
+			double lambda = -1., lambda_old, chisq = 0, chisq_old = -1.;
+			int ncount = 0, nfail = 0;
+			const int NFMAX = 3;
+			Subs::Format val(17), err(8);
 
-	// Stop either when the maximum number of iterations has been reached, chi**2
-	// has not decreased significantly for a while .
-	while(ncount < nmax && (nfail < NFMAX || chisq > chisq_old) && lambda < lmax){
-	    lambda_old = lambda;
-	    chisq_old  = chisq;
-	    lmfit(func, chisq, lambda, covar);
-	    std::cout << "lambda: " << lambda_old << " ----> " << lambda << "; chisq: " << err(chisq_old) << " ----> " << err(chisq) << std::endl;
+			// Stop either when the maximum number of iterations has been reached, chi**2
+			// has not decreased significantly for a while .
+			std::cout << "Starting iterations" << std::endl;
+			while(ncount < nmax && (nfail < NFMAX || chisq > chisq_old) && lambda < lmax){
+				lambda_old = lambda;
+				chisq_old  = chisq;
+				std::cout << "Iteration:" << ncount << std::endl;
+				lmfit(func, chisq, lambda, covar);
+				std::cout << "lambda: " << lambda_old << " ----> " << lambda << "; chisq: " << err(chisq_old) << " ----> " << err(chisq) << std::endl;
 
-	    // We check whether any progress is being made. If yes, then we check whether
-	    // it is enough. If not we add to a counter which is checked for above. 
-	    if(ncount){
-		if(chisq < chisq_old){
-		    if(chisq_old - chisq < delta)
-			nfail++;
-		    else
-			nfail = 0;
+				// We check whether any progress is being made. If yes, then we check whether
+				// it is enough. If not we add to a counter which is checked for above. 
+				if(ncount){
+					if(chisq < chisq_old){
+						if(chisq_old - chisq < delta)
+						nfail++;
+						else
+						nfail = 0;
+					}
+				}
+
+				// iteration counter.
+				ncount++;
+			}
+			std::cout << "Finished iterations" << std::endl;
+
+			// Report reason for halting
+			if(ncount == nmax) std::cout << "Iterations halted on reaching maximum number = " << nmax << std::endl;
+			if(nfail == NFMAX) std::cout << "Iterations halted after chi**2 decreased by less than " << delta << " " << NFMAX << " times in succession." << std::endl;
+			if(lambda >= lmax) std::cout << "Iterations halted after lambda = " << lambda << " exceeded threshold = " << lmax << std::endl;
+			
+			// set lambda = 0 to compute covariances
+			lambda = 0.;
+			lmfit(func, chisq, lambda, covar);
+
+			Subs::Array1D<double> param = func.get_param();
+			model.set_param(param);
+
+			std::cout << "\nwdof= " << wdof << std::endl;
+
+			std::cout << "\nParameter values:\n" << std::endl;
+			for(int i=0; i<func.nvar(); i++){
+				if(scale)
+				std::cout << model.get_name(i) << " = " << val(param[i]) << " +/- " << err(sqrt(Lmfunc::chisq_min/wdof*covar[i][i])) << std::endl; 
+				else
+				std::cout << model.get_name(i) << " = " << val(param[i]) << " +/- " << err(sqrt(covar[i][i])) << std::endl; 
+			}
+
+			std::cout << "\nCorrelation coefficients:\n" << std::endl;
+			for(int i=0; i<func.nvar(); i++){
+				for(int j=0; j<i; j++)
+				std::cout << "r(" << model.get_name(i) << "," << model.get_name(j) << ") = " << err(covar[i][j]/sqrt(covar[i][i]*covar[j][j])) << std::endl;
+			}
+		
+			// Store results
+			model.wrasc(omodel);
+
+			std::cout << "Minimum weighted chi**2 = " << err(Lmfunc::chisq_min) << ", scale factors = " 
+				<< err(Lmfunc::scale_min[0]) << " " << err(Lmfunc::scale_min[1]) << " " << err(Lmfunc::scale_min[2]) << " " << err(Lmfunc::scale_min[3]) 
+				<< ", number of model computations = " << Lmfunc::neval << std::endl;
+			std::cout << "(Weighted) number of data points = " << wdof << ", chi**2/wdof = " << err(Lmfunc::chisq_min/wdof) << std::endl;
+			if(scale)
+				std::cout << "Uncertainties were scaled so that effective chi**2/wdof = 1" << std::endl;
+			else
+				std::cout << "Uncertainties are 'raw', i.e. they were not scaled so that effective chi**2/wdof = 1" << std::endl;
+
+			std::cout << "Best model written to " << omodel << std::endl;
+
+			}
+			catch(const Lcurve::Lcurve_Error& err){
+			std::cerr << "Lcurve::Lcurve_Error exception thrown" << std::endl;
+			std::cerr << err << std::endl;
+			exit(EXIT_FAILURE);
+			}
+			catch(const std::string& err){
+			std::cerr << err << std::endl;
+			exit(EXIT_FAILURE);
 		}
-	    }
-
-	    // iteration counter.
-	    ncount++;
 	}
-
-	// Report reason for halting
-	if(ncount == nmax) std::cout << "Iterations halted on reaching maximum number = " << nmax << std::endl;
-	if(nfail == NFMAX) std::cout << "Iterations halted after chi**2 decreased by less than " << delta << " " << NFMAX << " times in succession." << std::endl;
-	if(lambda >= lmax) std::cout << "Iterations halted after lambda = " << lambda << " exceeded threshold = " << lmax << std::endl;
-	  
-	// set lambda = 0 to compute covariances
-	lambda = 0.;
-	lmfit(func, chisq, lambda, covar);
-
-	Subs::Array1D<double> param = func.get_param();
-	model.set_param(param);
-
-	std::cout << "\nwdof= " << wdof << std::endl;
-
-	std::cout << "\nParameter values:\n" << std::endl;
-	for(int i=0; i<func.nvar(); i++){
-	    if(scale)
-		std::cout << model.get_name(i) << " = " << val(param[i]) << " +/- " << err(sqrt(Lmfunc::chisq_min/wdof*covar[i][i])) << std::endl; 
-	    else
-		std::cout << model.get_name(i) << " = " << val(param[i]) << " +/- " << err(sqrt(covar[i][i])) << std::endl; 
-	}
-
-	std::cout << "\nCorrelation coefficients:\n" << std::endl;
-	for(int i=0; i<func.nvar(); i++){
-	    for(int j=0; j<i; j++)
-		std::cout << "r(" << model.get_name(i) << "," << model.get_name(j) << ") = " << err(covar[i][j]/sqrt(covar[i][i]*covar[j][j])) << std::endl;
-	}
- 
-	// Store results
-	model.wrasc(omodel);
-
-	std::cout << "Minimum weighted chi**2 = " << err(Lmfunc::chisq_min) << ", scale factors = " 
-		  << err(Lmfunc::scale_min[0]) << " " << err(Lmfunc::scale_min[1]) << " " << err(Lmfunc::scale_min[2]) << " " << err(Lmfunc::scale_min[3]) 
-		  << ", number of model computations = " << Lmfunc::neval << std::endl;
-	std::cout << "(Weighted) number of data points = " << wdof << ", chi**2/wdof = " << err(Lmfunc::chisq_min/wdof) << std::endl;
-	if(scale)
-	    std::cout << "Uncertainties were scaled so that effective chi**2/wdof = 1" << std::endl;
-	else
-	    std::cout << "Uncertainties are 'raw', i.e. they were not scaled so that effective chi**2/wdof = 1" << std::endl;
-
-	std::cout << "Best model written to " << omodel << std::endl;
-
-    }
-    catch(const Lcurve::Lcurve_Error& err){
-	std::cerr << "Lcurve::Lcurve_Error exception thrown" << std::endl;
-	std::cerr << err << std::endl;
-	exit(EXIT_FAILURE);
-    }
-    catch(const std::string& err){
-	std::cerr << err << std::endl;
-	exit(EXIT_FAILURE);
-    }
 }
-
 
 // This does the main work, equivalent to mrqcof in NR. Starting from the current model, 
 // it computes the lightcurves and its derivatives with respect to each parameter and then 
 // uses these to calculate the Levenberg-Marquardt matric and vector.
 void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta, double& chisq){
-  
+    std::cout << "lmcomp" << std::endl;
     bool start = (Lmfunc::neval == 0);
 
     // Retrieve the current variable parameters and step sizes
@@ -336,11 +347,11 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
 	for(int k=0; k<j; k++) alpha[k][j] = alpha[j][k];
 
     if(start || chisq < Lmfunc::chisq_min){
-	Lmfunc::scale_min = sfac;
-	Lmfunc::chisq_min = chisq;
-	Subs::Format form(12);
-	std::cout << "Weighted chi**2 = " << form(chisq) << ", scale factors = " << 
-	    form(sfac[0]) << ", " << form(sfac[1]) << ", " << form(sfac[2]) << ", " << form(sfac[3]) << ", neval = " << neval << std::endl;
+		Lmfunc::scale_min = sfac;
+		Lmfunc::chisq_min = chisq;
+		Subs::Format form(12);
+		std::cout << "Weighted chi**2 = " << form(chisq) << ", scale factors = " << 
+			form(sfac[0]) << ", " << form(sfac[1]) << ", " << form(sfac[2]) << ", " << form(sfac[3]) << ", neval = " << neval << std::endl;
     }
 
 }  
@@ -355,7 +366,7 @@ void Lmfunc::lmcomp(Subs::Buffer2D<double>& alpha, Subs::Buffer1D<double>& beta,
  */
 
 void lmfit(Lmfunc& func, double& chisq, double& lambda, Subs::Buffer2D<double>& covar){
-
+	std::cout << "lmfit" << std::endl;
     static Subs::Buffer1D<double> beta;
     static Subs::Array1D<double> da;
     static Subs::Buffer2D<double> oneda, alpha;
@@ -363,21 +374,21 @@ void lmfit(Lmfunc& func, double& chisq, double& lambda, Subs::Buffer2D<double>& 
 
     // Initialisation
     if(lambda < 0.){
-	beta.resize(func.nvar());
-	da.resize(func.nvar());
-	oneda.resize(func.nvar(),1);
-	alpha.resize(func.nvar(),func.nvar());
-	covar.resize(func.nvar(),func.nvar());
-	lambda=0.001;
-	func.lmcomp(alpha, beta, chisq);
-	ochisq = chisq;
+		beta.resize(func.nvar());
+		da.resize(func.nvar());
+		oneda.resize(func.nvar(),1);
+		alpha.resize(func.nvar(),func.nvar());
+		covar.resize(func.nvar(),func.nvar());
+		lambda=0.001;
+		func.lmcomp(alpha, beta, chisq);
+		ochisq = chisq;
     }
 
     // Alter linearised fitting matrix by augmenting diagonal elements
     covar = alpha;
     for (int j=0; j<func.nvar(); j++){
-	covar[j][j] = alpha[j][j]*(1.0+lambda);
-	oneda[j][0] = beta[j];
+		covar[j][j] = alpha[j][j]*(1.0+lambda);
+		oneda[j][0] = beta[j];
     }
 
     // Matrix solution to find a (hopefully) better solution
@@ -395,19 +406,16 @@ void lmfit(Lmfunc& func, double& chisq, double& lambda, Subs::Buffer2D<double>& 
     func.lmcomp(covar, da, chisq);
 
     if(chisq < ochisq){
-
-	// Chi**2 reduced ==> success, so reduce lambda
-	lambda  *= 0.1;
-	ochisq   = chisq;
-	alpha    = covar;
-	beta     = da;
-
+		// Chi**2 reduced ==> success, so reduce lambda
+		lambda  *= 0.1;
+		ochisq   = chisq;
+		alpha    = covar;
+		beta     = da;
     }else{
-
-	// Damn, Chi**2 increased ==> retrieve old parameters, back off on lambda
-	lambda  *= 10.0;
-	func.set_param(asave);
-	chisq    = ochisq;
+		// Damn, Chi**2 increased ==> retrieve old parameters, back off on lambda
+		lambda  *= 10.0;
+		func.set_param(asave);
+		chisq    = ochisq;
     }
 }
 

@@ -371,7 +371,6 @@ namespace Lcurve {
 
         try
         {
-
             // Construct Input object
             Subs::Input input(argc, const_cast<char**>(argv), Lcurve::LCURVE_ENV, Lcurve::LCURVE_DIR);
 
